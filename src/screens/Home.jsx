@@ -8,8 +8,9 @@ import InstallCard from "../components/InstallCard";
 import ScoreRing from "../components/ScoreRing";
 import StatTile from "../components/StatTile";
 import WeekStreak from "../components/WeekStreak";
+import TodayCard from "../session/TodayCard";
 
-export default function Home({ sessions, onNavigate, connectionState, demoMode }) {
+export default function Home({ sessions, onNavigate, onStartSession, connectionState, demoMode }) {
   const data = useMemo(() => {
     const { days, sessionsThisWeek } = weekOverview(sessions);
     const { current, baseline } = baselineForRange(sessions, 30);
@@ -54,6 +55,8 @@ export default function Home({ sessions, onNavigate, connectionState, demoMode }
         <div className="eyebrow">{greeting()}</div>
         <h1 className="title">Welcome back</h1>
       </header>
+
+      <TodayCard demoMode={demoMode} onStart={onStartSession} />
 
       <section className="hero" aria-label="This week">
         <div className="hero-text">

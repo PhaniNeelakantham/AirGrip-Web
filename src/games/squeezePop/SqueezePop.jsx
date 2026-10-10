@@ -5,6 +5,9 @@ import { getCalibration, saveCalibration } from "../../data/gripCalibration";
 import { TARGETS, createRepCounter, stepBubble, toLevel, REP_LOW } from "./logic";
 import { useDevicePause } from "../useDevicePause";
 import ConnectionPause from "../ConnectionPause";
+import ResultActions, { StepTag } from "../ResultActions";
+import { createGripTracker, createTremorTracker, fatiguePct } from "../metrics";
+import { toAngles } from "../../ble/orientation";
 
 const TOTAL_BUBBLES = 15;
 const RISE_SECONDS = 9;
@@ -73,6 +76,34 @@ function SqueezeMeter({ level, target, fillRef }) {
   );
 }
 
+// Live squeeze during the grip check, in psi above the relaxed hand. The
+// scale grows with the best squeeze so the bar stays meaningful whether the
+// player's grip is weak or strong; the line marks the best so far.
+function CalSqueezeMeter({ nowPsi = 0, bestPsi = 0 }) {
+  const scale = Math.max(4, bestPsi * 1.25);
+  const pct = (v) => `${Math.min(1, v / scale) * 100}%`;
+  return (
+    <div className="cal-squeeze">
+      <div className="cal-squeeze-head">
+        <span>Your squeeze</span>
+        <strong>{nowPsi.toFixed(1)} psi</strong>
+      </div>
+      <div
+        className="cal-squeeze-track"
+        role="meter"
+        aria-label="Your squeeze"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(scale)}
+        aria-valuenow={Number(nowPsi.toFixed(1))}
+      >
+        <div className="cal-squeeze-fill" style={{ width: pct(nowPsi) }} />
+        {bestPsi > 0 && <div className="cal-squeeze-best" style={{ left: pct(bestPsi) }} />}
+      </div>
+      <div className="cal-squeeze-best-text">Best: {bestPsi.toFixed(1)} psi</div>
+    </div>
+  );
+}
+
 function HoldButton({ held }) {
   const set = (down) => (e) => {
     e.preventDefault();
@@ -102,6 +133,9 @@ export default function SqueezePop({
   demoMode,
   onExit,
   onReconnect,
+  sessionStep = null,
+  sessionGroupId = null,
+  onNext,
 }) {
   const [phase, setPhase] = useState("intro"); // intro | calibrate | playing | done
   const [view, setView] = useState(null);
@@ -196,6 +230,8 @@ export default function SqueezePop({
           calStep: "squeeze",
           progress: (t - RELAX_SECONDS) / CAL_SQUEEZE_SECONDS,
           felt: peak - rest >= minRange,
+          nowPsi: Math.max(0, psi - rest), // squeeze above the relaxed reading
+          bestPsi: Math.max(0, peak - rest),
         });
       } else {
         if (peak - rest >= minRange) {
@@ -218,6 +254,13 @@ export default function SqueezePop({
     (g) => {
       const peak = Number(g.peak.toFixed(2));
       const avg = g.squeezeFrames ? Number((g.squeezeSum / g.squeezeFrames).toFixed(2)) : 0;
+      const ttt = g.timesToTarget;
+      const advanced = {
+        ...g.grip.result(),
+        ...g.tremor.result(),
+        timeToTargetS: ttt.length ? Number((ttt.reduce((a, v) => a + v, 0) / ttt.length).toFixed(2)) : null,
+        fatiguePct: fatiguePct(g.popPeaks),
+      };
       if (!demoMode) {
         addSession({
           game: "squeeze-pop",
@@ -227,12 +270,14 @@ export default function SqueezePop({
           avgForcePsi: avg,
           reps: g.reps.count,
           rotationRangeDeg: null,
+          ...advanced,
+          ...(sessionGroupId && { groupId: sessionGroupId }),
         });
       }
       setResult({ popped: g.popped, peak, reps: g.reps.count, saved: !demoMode });
       setPhase("done");
     },
-    [demoMode]
+    [demoMode, sessionGroupId]
   );
 
   // Main game loop.
@@ -254,6 +299,13 @@ export default function SqueezePop({
       squeezeSum: 0,
       squeezeFrames: 0,
       reps: createRepCounter(),
+      // advanced measurements (Progress -> Advanced details)
+      grip: createGripTracker(),
+      tremor: createTremorTracker(),
+      lastSample: null,
+      lastSampleAt: 0,
+      popPeaks: [],
+      timesToTarget: [],
     };
     let raf;
     let last = performance.now();
@@ -276,6 +328,17 @@ export default function SqueezePop({
         g.squeezeFrames++;
       }
       g.reps.update(level);
+      g.grip.update(level, dt);
+      if (!demoMode) {
+        // Wrist steadiness from each new sensor reading (not each screen frame).
+        const r = reading.current;
+        if (r !== g.lastSample) {
+          const at = lastDataAtRef.current;
+          if (g.lastSample) g.tremor.add(toAngles(r), (at - g.lastSampleAt) / 1000);
+          g.lastSample = r;
+          g.lastSampleAt = at;
+        }
+      }
       g.effects = g.effects.filter((e) => now - e.at < 600);
 
       if (g.finishing !== null) {
@@ -287,7 +350,13 @@ export default function SqueezePop({
       } else if (g.resting > 0) {
         g.resting = Math.max(0, g.resting - dt);
       } else if (g.bubble) {
-        const outcome = stepBubble(g.bubble, level, dt, RISE_SECONDS);
+        const b = g.bubble;
+        if (!b.charged && b.riseAt === undefined && level > REP_LOW) b.riseAt = g.elapsed;
+        b.peak = Math.max(b.peak ?? 0, level);
+        const wasCharged = b.charged;
+        const outcome = stepBubble(b, level, dt, RISE_SECONDS);
+        if (!wasCharged && b.charged && b.riseAt !== undefined) g.timesToTarget.push(g.elapsed - b.riseAt);
+        if (outcome === "popped") g.popPeaks.push(b.peak);
         if (outcome) {
           g.effects.push({ ...g.bubble, kind: outcome, at: now });
           g.bubble = null;
@@ -348,7 +417,7 @@ export default function SqueezePop({
     let lastSignature = null;
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [phase, readPsi, demoMode, finish, link.pausedRef]);
+  }, [phase, readPsi, demoMode, finish, link.pausedRef, reading, lastDataAtRef]);
 
   const begin = (forceCalibrate) => {
     held.current = false;
@@ -377,7 +446,10 @@ export default function SqueezePop({
         <button className="icon-btn" onClick={onExit} aria-label="Leave game">
           <X size={22} aria-hidden="true" />
         </button>
-        <div className="game-bar-title">Squeeze Pop</div>
+        <div className="game-bar-title">
+          Squeeze Pop
+          <StepTag sessionStep={sessionStep} />
+        </div>
         <div className="game-timer" aria-label="Bubbles">
           <CircleDot size={16} aria-hidden="true" />
           {phase === "done" ? TOTAL_BUBBLES : (playing ? view.resolved : 0)} / {TOTAL_BUBBLES}
@@ -490,8 +562,10 @@ export default function SqueezePop({
               <p className="overlay-note">
                 {view.calStep === "relax"
                   ? "Rest your hand gently on the grip."
-                  : "Keep squeezing until the bar fills. It shouldn't hurt."}
+                  : "Keep squeezing until the time runs out. It shouldn't hurt."}
               </p>
+              {view.calStep === "squeeze" && <CalSqueezeMeter nowPsi={view.nowPsi} bestPsi={view.bestPsi} />}
+              {view.calStep === "squeeze" && <div className="cal-label">Time</div>}
               <div className="cal-bar">
                 <div className="cal-fill" style={{ width: `${Math.min(1, view.progress) * 100}%` }} />
               </div>
@@ -539,12 +613,12 @@ export default function SqueezePop({
               <p className="overlay-note">
                 {result.saved ? "Saved to your progress." : "Demo game, not saved to your progress."}
               </p>
-              <button className="btn btn-primary btn-block" onClick={() => begin(false)}>
-                Play again
-              </button>
-              <button className="btn btn-secondary btn-block" onClick={onExit}>
-                Done
-              </button>
+              <ResultActions
+                sessionStep={sessionStep}
+                onNext={() => onNext?.(result)}
+                onPlayAgain={() => begin(false)}
+                onExit={onExit}
+              />
             </div>
           </div>
         )}

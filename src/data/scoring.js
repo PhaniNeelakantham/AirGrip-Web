@@ -47,14 +47,20 @@ function average(values) {
 
 // Averages only the sessions that recorded this metric (a wrist-only game
 // has no grip numbers); null when none did.
-function averageOf(sessions, key) {
+export function averageOf(sessions, key) {
   const values = sessions.map((s) => s[key]).filter(Number.isFinite);
   return values.length ? average(values) : null;
 }
 
+// Games played inside one guided session share a groupId and count as one
+// session; games played on their own each count as one.
+export function countSessions(records) {
+  return new Set(records.map((s) => s.groupId ?? `single-${s.id}`)).size;
+}
+
 export function summarize(sessions) {
   return {
-    count: sessions.length,
+    count: countSessions(sessions),
     avgPeakForce: averageOf(sessions, "peakForcePsi"),
     avgReps: averageOf(sessions, "reps"),
     avgRotationRange: averageOf(sessions, "rotationRangeDeg"),

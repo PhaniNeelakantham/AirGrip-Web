@@ -1,8 +1,20 @@
 import { useMemo, useState } from "react";
-import { CalendarCheck, Gamepad2, Hand, Info, Repeat, RotateCw, Sparkles, TrendingUp } from "lucide-react";
+import {
+  CalendarCheck,
+  ChevronDown,
+  Gamepad2,
+  Hand,
+  Info,
+  Microscope,
+  Repeat,
+  RotateCw,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
 import {
   RANGE_OPTIONS,
   baselineForRange,
+  sessionsInRange,
   improvementScore,
   percentChange,
   summarize,
@@ -13,6 +25,16 @@ import ScoreRing from "../components/ScoreRing";
 import StatTile from "../components/StatTile";
 import DemoBanner from "../components/DemoBanner";
 import { GAMES } from "../data/games";
+import AdvancedDetails from "../components/AdvancedDetails";
+
+const ADVANCED_KEY = "aquagrip.advancedOpen";
+function loadAdvancedOpen() {
+  try {
+    return localStorage.getItem(ADVANCED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function SessionRow({ session: s }) {
   const game = GAMES.find((g) => g.id === s.game);
@@ -60,17 +82,39 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
   const range = RANGE_OPTIONS.find((r) => r.id === rangeId);
 
   const data = useMemo(() => {
+    // Everything in the range is shown; the score and % changes compare the
+    // range with the one before it (or its own halves when history is short).
+    const inRange = sessionsInRange(sessions, range.days);
     const { current, baseline } = baselineForRange(sessions, range.days);
     const now = summarize(current);
     const before = summarize(baseline);
-    return { current, now, before, score: improvementScore(now, before) };
+    return {
+      inRange,
+      currentList: current,
+      baselineList: baseline,
+      shown: summarize(inRange),
+      now,
+      before,
+      score: improvementScore(now, before),
+    };
   }, [sessions, range.days]);
+  const [showAdvanced, setShowAdvanced] = useState(loadAdvancedOpen);
+  const toggleAdvanced = () => {
+    setShowAdvanced((open) => {
+      try {
+        localStorage.setItem(ADVANCED_KEY, open ? "0" : "1");
+      } catch {
+        // Not remembered next visit; that's fine.
+      }
+      return !open;
+    });
+  };
 
   const band = scoreBand(data.score);
   const compare = comparisonLabel(range);
-  const recent = data.current.slice(-4).reverse();
-  const { avgPeakForce: grip, avgReps: reps, avgRotationRange: wrist } = data.now;
-  const gripPoints = data.current
+  const recent = data.inRange.slice(-4).reverse();
+  const { avgPeakForce: grip, avgReps: reps, avgRotationRange: wrist } = data.shown;
+  const gripPoints = data.inRange
     .filter((s) => Number.isFinite(s.avgForcePsi))
     .map((s) => ({ id: s.id, timestamp: s.timestamp, value: s.avgForcePsi }));
 
@@ -132,7 +176,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
       <h2 className="section-title">Grip strength over time</h2>
       <section className="card">
         <p className="card-sub">Your average squeeze in each session</p>
-        {gripPoints.length === 0 && data.current.length > 0 ? (
+        {gripPoints.length === 0 && data.inRange.length > 0 ? (
           <p className="card-sub">No grip games in this time range yet.</p>
         ) : (
           <LineChart points={gripPoints} valueLabel="Average squeeze" unit="psi" />
@@ -150,14 +194,14 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
           label="Grip strength"
           value={grip === null ? "—" : grip.toFixed(1)}
           unit={grip === null ? undefined : "psi"}
-          delta={percentChange(grip, data.before.avgPeakForce)}
+          delta={percentChange(data.now.avgPeakForce, data.before.avgPeakForce)}
         />
         <StatTile
           icon={Repeat}
           tint="mint"
           label="Squeezes per session"
           value={reps === null ? "—" : Math.round(reps)}
-          delta={percentChange(reps, data.before.avgReps)}
+          delta={percentChange(data.now.avgReps, data.before.avgReps)}
         />
         <StatTile
           icon={RotateCw}
@@ -165,10 +209,26 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
           label="Wrist motion"
           value={wrist === null ? "—" : Math.round(wrist)}
           unit={wrist === null ? undefined : "°"}
-          delta={percentChange(wrist, data.before.avgRotationRange)}
+          delta={percentChange(data.now.avgRotationRange, data.before.avgRotationRange)}
         />
-        <StatTile icon={CalendarCheck} tint="peach" label="Sessions" value={data.now.count} />
+        <StatTile icon={CalendarCheck} tint="peach" label="Sessions" value={data.shown.count} />
       </div>
+
+      <button className="adv-toggle" onClick={toggleAdvanced} aria-expanded={showAdvanced}>
+        <Microscope size={18} aria-hidden="true" />
+        {showAdvanced ? "Hide advanced details" : "Show advanced details"}
+        <ChevronDown size={18} aria-hidden="true" className={`adv-chevron${showAdvanced ? " is-open" : ""}`} />
+      </button>
+      {showAdvanced && (
+        <AdvancedDetails
+          inRange={data.inRange}
+          now={data.currentList}
+          before={data.baselineList}
+          compare={compare}
+          allSessions={sessions}
+          demoMode={demoMode}
+        />
+      )}
 
       {recent.length > 0 && (
         <>

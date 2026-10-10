@@ -4,6 +4,7 @@ import { angleDelta, toAngles } from "../../ble/orientation";
 import { addSession } from "../../data/sessionStore";
 import { getCalibration } from "../../data/gripCalibration";
 import { REP_HIGH, createRepCounter, toLevel } from "../squeezePop/logic";
+import ResultActions, { StepTag } from "../ResultActions";
 import {
     BALLOON_R,
     BALLOON_Y,
@@ -134,7 +135,16 @@ function SidePad({ held }) {
     );
 }
 
-export default function BalloonRescue({ connectionState, readingRef: reading, demoMode, onExit, onGoToDevice }) {
+export default function BalloonRescue({
+    connectionState,
+    readingRef: reading,
+    demoMode,
+    onExit,
+    onReconnect,
+    sessionStep = null,
+    sessionGroupId = null,
+    onNext,
+}) {
     const [phase, setPhase] = useState("intro"); // intro | pump | fly | done
     const [hud, setHud] = useState({ seconds: PUMP_SECONDS, lives: LIVES });
     const [result, setResult] = useState(null);
@@ -256,6 +266,7 @@ export default function BalloonRescue({ connectionState, readingRef: reading, de
                     avgForcePsi: avg,
                     reps: s.pumps,
                     rotationRangeDeg: hasFlight ? rangeDeg : null,
+                    ...(sessionGroupId && { groupId: sessionGroupId }),
                 });
             }
             setResult({
@@ -270,7 +281,7 @@ export default function BalloonRescue({ connectionState, readingRef: reading, de
             });
             setPhase("done");
         },
-        [demoMode]
+        [demoMode, sessionGroupId]
     );
 
     // Stage 1: pump the balloon to the brim before time runs out.
@@ -480,7 +491,10 @@ export default function BalloonRescue({ connectionState, readingRef: reading, de
                 <button className="icon-btn" onClick={onExit} aria-label="Leave game">
                     <X size={22} aria-hidden="true" />
                 </button>
-                <div className="game-bar-title">Balloon Rescue</div>
+                <div className="game-bar-title">
+                    Balloon Rescue
+                    <StepTag sessionStep={sessionStep} />
+                </div>
                 <div className="game-timer" aria-label={`${timerLabel} time left`}>
                     <Timer size={16} aria-hidden="true" /> {timerValue}
                 </div>
@@ -540,7 +554,7 @@ export default function BalloonRescue({ connectionState, readingRef: reading, de
                                     Start
                                 </button>
                             ) : (
-                                <button className="btn btn-primary btn-block" onClick={onGoToDevice}>
+                                <button className="btn btn-primary btn-block" onClick={onReconnect}>
                                     Connect device
                                 </button>
                             )}
@@ -592,12 +606,12 @@ export default function BalloonRescue({ connectionState, readingRef: reading, de
                                         ? "Saved to your progress."
                                         : "Demo game, not saved to your progress."}
                             </p>
-                            <button className="btn btn-primary btn-block" onClick={start}>
-                                Play again
-                            </button>
-                            <button className="btn btn-secondary btn-block" onClick={onExit}>
-                                Done
-                            </button>
+                            <ResultActions
+                                sessionStep={sessionStep}
+                                onNext={() => onNext?.(result)}
+                                onPlayAgain={start}
+                                onExit={onExit}
+                            />
                         </div>
                     </div>
                 )}

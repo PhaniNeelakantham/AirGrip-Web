@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Compass, PartyPopper, RotateCw, Timer, X } from "lucide-react";
 import { angleDelta, toAngles } from "../../ble/orientation";
+import { createTremorTracker } from "../metrics";
 import { addSession } from "../../data/sessionStore";
 import { useElementWidth } from "../../hooks/useElementWidth";
 import { generateMaze, resolveCollisions, wallRects } from "./maze";
 import { useDevicePause } from "../useDevicePause";
 import ConnectionPause from "../ConnectionPause";
+import ResultActions, { StepTag } from "../ResultActions";
 
 const COLS = 6;
 const ROWS = 8;
 const WALL = 0.14; // wall thickness, in cells
 const BALL_R = 0.26;
-const MAX_SPEED = 2.6; // cells per second at full tilt
-const MAX_TILT = 30; // degrees of tilt for full speed
+const MAX_SPEED = 1.6; // cells per second at full tilt
+const MAX_TILT = 40; // degrees of tilt for full speed
 const DEADZONE = 4; // degrees ignored so a resting hand keeps the ball still
 const KEY_RAMP = 140; // degrees per second the arrow keys ease tilt in/out
 const GOAL_RADIUS = 0.35;
@@ -98,6 +100,9 @@ export default function TiltMaze({
   demoMode,
   onExit,
   onReconnect,
+  sessionStep = null,
+  sessionGroupId = null,
+  onNext,
 }) {
   const [phase, setPhase] = useState("intro"); // intro | playing | done
   const link = useDevicePause({ active: phase === "playing", demoMode, connectionState, lastDataAtRef });
@@ -117,6 +122,7 @@ export default function TiltMaze({
   const keyTilt = useRef({ x: 0, y: 0 });
   const center = useRef({ pitch: 0, roll: 0, yaw: 0 });
   const range = useRef({ minX: 0, maxX: 0, minY: 0, maxY: 0 });
+  const tremor = useRef({ tracker: createTremorTracker(), last: null, lastAt: 0 });
   const colors = useRef(null);
 
   const connected = connectionState === "connected";
@@ -243,12 +249,17 @@ export default function TiltMaze({
           avgForcePsi: null,
           reps: null,
           rotationRangeDeg: rangeDeg,
+          // advanced: range per direction + wrist steadiness (X = palm turn, Y = tilt; see AXIS_MAP)
+          rollRangeDeg: Math.round(rg.maxX - rg.minX),
+          pitchRangeDeg: Math.round(rg.maxY - rg.minY),
+          ...tremor.current.tracker.result(),
+          ...(sessionGroupId && { groupId: sessionGroupId }),
         });
       }
       setResult({ timeS, rangeDeg, saved: !demoMode });
       setPhase("done");
     },
-    [demoMode]
+    [demoMode, sessionGroupId]
   );
 
   // Game loop.
@@ -286,6 +297,17 @@ export default function TiltMaze({
       seconds += dt;
 
       const tilt = readTilt(dt);
+      if (!demoMode) {
+        // Wrist steadiness from each new sensor reading (not each screen frame).
+        const tr = tremor.current;
+        const r = reading.current;
+        if (r !== tr.last) {
+          const at = lastDataAtRef.current;
+          if (tr.last) tr.tracker.add(toAngles(r), (at - tr.lastAt) / 1000);
+          tr.last = r;
+          tr.lastAt = at;
+        }
+      }
       const rg = range.current;
       rg.minX = Math.min(rg.minX, tilt.x);
       rg.maxX = Math.max(rg.maxX, tilt.x);
@@ -318,7 +340,7 @@ export default function TiltMaze({
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [phase, demoMode, reading, rects, draw, finish, link.pausedRef]);
+  }, [phase, demoMode, reading, lastDataAtRef, rects, draw, finish, link.pausedRef]);
 
   // After a reconnect the hand may have moved, so "level" is wherever it is now.
   const resumeAfterReconnect = () => {
@@ -334,6 +356,7 @@ export default function TiltMaze({
     keyTilt.current = { x: 0, y: 0 };
     held.current.clear();
     range.current = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+    tremor.current = { tracker: createTremorTracker(), last: null, lastAt: 0 };
     if (!demoMode) center.current = toAngles(reading.current);
     setElapsed(0);
     setResult(null);
@@ -346,7 +369,10 @@ export default function TiltMaze({
         <button className="icon-btn" onClick={onExit} aria-label="Leave game">
           <X size={22} aria-hidden="true" />
         </button>
-        <div className="game-bar-title">Tilt Maze</div>
+        <div className="game-bar-title">
+          Tilt Maze
+          <StepTag sessionStep={sessionStep} />
+        </div>
         <div className="game-timer" aria-label="Time">
           <Timer size={16} aria-hidden="true" /> {formatTime(phase === "done" ? result.timeS : elapsed)}
         </div>
@@ -426,12 +452,13 @@ export default function TiltMaze({
               <p className="overlay-note">
                 {result.saved ? "Saved to your progress." : "Demo game, not saved to your progress."}
               </p>
-              <button className="btn btn-primary btn-block" onClick={() => start(true)}>
-                Play a new maze
-              </button>
-              <button className="btn btn-secondary btn-block" onClick={onExit}>
-                Done
-              </button>
+              <ResultActions
+                sessionStep={sessionStep}
+                onNext={() => onNext?.(result)}
+                onPlayAgain={() => start(true)}
+                onExit={onExit}
+                playAgainLabel="Play a new maze"
+              />
             </div>
           </div>
         )}

@@ -1,5 +1,7 @@
 // Friendly, plain-language views of session history for the Home and
 // Progress screens (week view, streak, greeting, score wording).
+import { countSessions } from "./scoring";
+
 export const WEEKLY_GOAL = 5;
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -38,7 +40,7 @@ export function weekOverview(sessions, now = new Date()) {
     };
   });
 
-  const sessionsThisWeek = sessions.filter((s) => s.timestamp >= monday.getTime()).length;
+  const sessionsThisWeek = countSessions(sessions.filter((s) => s.timestamp >= monday.getTime()));
   return { days, sessionsThisWeek };
 }
 

@@ -9,12 +9,19 @@ const shortDate = (t) => new Date(t).toLocaleDateString(undefined, { month: "sho
 // Single-series trend (dataviz skill specs): 2px line, ~10% area wash,
 // 8px end dot with a surface ring, sparse direct label, hairline grid,
 // crosshair + tooltip on hover/arrow keys, and a table fallback.
-export default function LineChart({ points, valueLabel, unit = "", valueFormat = (v) => v.toFixed(1) }) {
+// dataKey: which measurement is shown. Changing it keeps the chart (axes stay
+// put), clears the hover, and fades the new line in.
+export default function LineChart({ points, valueLabel, unit = "", valueFormat = (v) => v.toFixed(1), dataKey = "" }) {
   const wrapRef = useRef(null);
   const width = useElementWidth(wrapRef);
   const gradientId = useId();
   const [hoverIndex, setHoverIndex] = useState(null);
   const [showTable, setShowTable] = useState(false);
+  const [shownKey, setShownKey] = useState(dataKey);
+  if (dataKey !== shownKey) {
+    setShownKey(dataKey);
+    setHoverIndex(null);
+  }
 
   const geo = useMemo(() => {
     if (points.length === 0 || width === 0) return null;
@@ -23,7 +30,9 @@ export default function LineChart({ points, valueLabel, unit = "", valueFormat =
     const rawMin = Math.min(...values);
     const rawMax = Math.max(...values);
     const spread = rawMax - rawMin || 1;
-    const minY = Math.max(0, rawMin - spread * 0.2);
+    // Don't pad below 0 for all-positive data (e.g. psi), but let the scale go
+    // negative when the data does (e.g. fatigue), so nothing draws off-chart.
+    const minY = rawMin >= 0 ? Math.max(0, rawMin - spread * 0.2) : rawMin - spread * 0.2;
     const maxY = rawMax + spread * 0.2;
     const minT = Math.min(...times);
     const spreadT = Math.max(...times) - minT || 1;
@@ -46,7 +55,10 @@ export default function LineChart({ points, valueLabel, unit = "", valueFormat =
       return { v, y: toY(v) };
     });
 
-    return { scaled, line, area, ticks, baseY };
+    // A visible 0 line when the data crosses zero (e.g. fatigue: below = weaker).
+    const zeroY = minY < 0 && maxY > 0 ? toY(0) : null;
+
+    return { scaled, line, area, ticks, baseY, zeroY };
   }, [points, width]);
 
   const pickNearest = (clientX) => {
@@ -110,15 +122,33 @@ export default function LineChart({ points, valueLabel, unit = "", valueFormat =
               </g>
             ))}
 
-            <path d={geo.area} fill={`url(#${gradientId})`} />
-            <path
-              d={geo.line}
-              fill="none"
-              stroke="var(--teal)"
-              strokeWidth={2}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
+            {/* Re-created when the measurement changes, so only the data fades in. */}
+            <g key={dataKey} className="chart-series">
+              <path d={geo.area} fill={`url(#${gradientId})`} />
+              <path
+                d={geo.line}
+                fill="none"
+                stroke="var(--teal)"
+                strokeWidth={2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </g>
+            {geo.zeroY !== null && (
+              <g>
+                <line
+                  x1={PAD.left}
+                  x2={width - PAD.right}
+                  y1={geo.zeroY}
+                  y2={geo.zeroY}
+                  stroke="var(--axis)"
+                  strokeWidth={1.5}
+                />
+                <text x={PAD.left - 8} y={geo.zeroY + 4} textAnchor="end" fontSize={12} fill="var(--ink-2)">
+                  0
+                </text>
+              </g>
+            )}
 
             <text x={PAD.left} y={HEIGHT - 8} fontSize={12} fill="var(--ink-3)">
               {shortDate(geo.scaled[0].timestamp)}
@@ -134,7 +164,7 @@ export default function LineChart({ points, valueLabel, unit = "", valueFormat =
                 <circle cx={hovered.x} cy={hovered.y} r={4} fill="var(--teal)" />
               </>
             ) : (
-              <>
+              <g key={`end-${dataKey}`} className="chart-series">
                 <circle cx={last.x} cy={last.y} r={6} fill="var(--surface)" />
                 <circle cx={last.x} cy={last.y} r={4} fill="var(--teal)" />
                 <text
@@ -150,7 +180,7 @@ export default function LineChart({ points, valueLabel, unit = "", valueFormat =
                 >
                   {valueFormat(last.value)}
                 </text>
-              </>
+              </g>
             )}
           </svg>
         )}
