@@ -23,7 +23,7 @@ const MOVE_SPEED = 0.85; // balloon widths per second at full tilt
 const MAX_TILT = 30; // degrees of wrist rotation for full speed
 const DEADZONE = 4;
 const KEY_RAMP = 140; // degrees per second the arrow keys ease tilt in/out
-const FALLBACK_SPAN_PSI = 3; // squeeze range used when no grip check has been done
+const FALLBACK_SPAN_PSI = 1.5; // squeeze range used when no grip check has been done
 const BALLOON_COLOR = ["#ff8a6b", "#e8456b"];
 
 const KEY_DIRS = { ArrowLeft: "left", ArrowRight: "right", a: "left", d: "right" };
@@ -279,7 +279,7 @@ export default function BalloonRescue({ connectionState, readingRef: reading, de
         const cal = getCalibration(demoMode);
         const rest = demoMode ? 0 : reading.current.forcePsi;
         const span = cal ? { restPsi: cal.restPsi, maxPsi: cal.maxPsi } : { restPsi: rest, maxPsi: rest + FALLBACK_SPAN_PSI };
-        const reps = createRepCounter();
+        const reps = createRepCounter(0.18, 0.12);
         let repsSeen = 0;
         let fill = 0;
         let elapsed = 0;
