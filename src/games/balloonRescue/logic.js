@@ -1,7 +1,7 @@
 // Rules for Balloon Rescue. Positions are normalized: x runs 0..1 across the
 // play area's width, y runs 0..1 down its height.
-export const PUMP_SECONDS = 10; // time to fill the balloon
-export const PUMP_GAIN = 0.08; // fill added per pump (squeeze or Space press)
+export const PUMP_SECONDS = 15; // time to fill the balloon
+export const PUMP_GAIN = 0.14; // fill added per pump (squeeze or Space press)
 export const PUMP_DECAY = 0.03; // fill leaked per second, so you can't stop pumping
 export const FLY_SECONDS = 30;
 export const LIVES = 3;
