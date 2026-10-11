@@ -2819,7 +2819,7 @@ button.game-card:hover {
 }
 
 .fish-rod {
-  stroke: #6b4a2b;
+  stroke: #c07a3a;
   stroke-width: 6;
   stroke-linecap: round;
 }
@@ -2829,7 +2829,7 @@ button.game-card:hover {
 }
 
 .fish-handle {
-  fill: #3d2b1a;
+  fill: #7a4521;
 }
 
 .fish-line {

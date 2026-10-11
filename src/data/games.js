@@ -1,4 +1,4 @@
-import { CircleDot, Compass, Fish, Rocket, Target } from "lucide-react";
+import { CircleDot, Compass, Fish, Rocket } from "lucide-react";
 
 // Game catalog. Only games with `playable: true` have been built so far.
 export const GAMES = [
@@ -41,14 +41,5 @@ export const GAMES = [
     tint: "mint",
     icon: Fish,
     playable: true,
-  },
-  {
-    id: "hold-steady",
-    name: "Hold Steady",
-    desc: "Keep your squeeze in the green zone as long as you can.",
-    trains: "Grip control",
-    minutes: 2,
-    tint: "mint",
-    icon: Target,
   },
 ];
