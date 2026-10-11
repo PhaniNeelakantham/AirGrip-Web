@@ -58,7 +58,7 @@ export const ADVANCED_METRICS = [
     digits: 2,
     better: "down",
     delta: "percent",
-    explain: "How quickly you reach each bubble's target once you start squeezing.",
+    explain: "How quickly you reach the target squeeze (each bubble in Squeeze Pop, each bite in Fishing) once you start.",
   },
   {
     key: "fatiguePct",
@@ -101,7 +101,7 @@ export const ADVANCED_METRICS = [
     digits: 0,
     better: "up",
     delta: "percent",
-    explain: "How far you tilted your hand up and down during Tilt Maze.",
+    explain: "How far you tilted your hand up and down during Tilt Maze and Fishing.",
   },
   {
     key: "rollRangeDeg",
@@ -111,7 +111,17 @@ export const ADVANCED_METRICS = [
     digits: 0,
     better: "up",
     delta: "percent",
-    explain: "How far you turned your palm during Tilt Maze.",
+    explain: "How far you turned your palm during Tilt Maze and Fishing.",
+  },
+  {
+    key: "yawRangeDeg",
+    group: "wrist",
+    label: "Side-to-side range",
+    unit: "°",
+    digits: 0,
+    better: "up",
+    delta: "percent",
+    explain: "How far you waved your hand left and right (palm down) while aiming in Fishing.",
   },
 ];
 
@@ -149,6 +159,7 @@ const CSV_NAMES = {
   tremorHz: "tremor_rhythm_per_s",
   pitchRangeDeg: "tilt_range_deg",
   rollRangeDeg: "palm_turn_range_deg",
+  yawRangeDeg: "side_to_side_range_deg",
 };
 
 const CSV_COLUMNS = [

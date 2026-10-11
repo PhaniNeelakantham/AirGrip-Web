@@ -91,3 +91,21 @@ export function tiltTuning(baseline) {
     rollRightSign: baseline.rollRightSign ?? 1,
   };
 }
+
+// Side-to-side (yaw) range is naturally smaller, and baselines taken before
+// it was measured don't have it.
+const DEFAULT_YAW_FULL_DEG = 20;
+const yawFullFor = (range) =>
+  Number.isFinite(range) ? Math.min(30, Math.max(8, range * FULL_SPEED_FRACTION)) : DEFAULT_YAW_FULL_DEG;
+
+// All three wrist directions, for games that use tilt, turn and wave:
+// the angle that counts as "all the way" (70% of the player's range) in
+// each direction, and which sensor direction is up / right.
+export function wristTuning(baseline) {
+  const tilt = tiltTuning(baseline);
+  return {
+    ...tilt,
+    yawFull: { right: yawFullFor(baseline?.yawRight), left: yawFullFor(baseline?.yawLeft) },
+    yawRightSign: baseline?.yawRightSign ?? 1,
+  };
+}

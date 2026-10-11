@@ -58,6 +58,13 @@
   --desk-base: #ebe8fb;
   --desk-a: #cfe7ff;
   --desk-b: #d5f4ec;
+
+  --water-top: #bfe9f2;
+  --water-bottom: #6cc4d8;
+  --water-ripple: rgba(255, 255, 255, 0.55);
+  --shore: #b9dd8f;
+  --shore-edge: #93c46a;
+  --fish-shadow: rgba(16, 64, 92, 0.32);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -110,5 +117,12 @@
     --desk-base: #0a0b16;
     --desk-a: #1a1f48;
     --desk-b: #0f2e2c;
+
+    --water-top: #123a4c;
+    --water-bottom: #0b2633;
+    --water-ripple: rgba(255, 255, 255, 0.16);
+    --shore: #2f4a2a;
+    --shore-edge: #3e6236;
+    --fish-shadow: rgba(2, 10, 18, 0.75);
   }
 }

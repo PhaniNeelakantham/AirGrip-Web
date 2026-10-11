@@ -9,6 +9,7 @@ import ProgressTracker from "./screens/ProgressTracker";
 import TiltMaze from "./games/tiltMaze/TiltMaze";
 import SqueezePop from "./games/squeezePop/SqueezePop";
 import BalloonRescue from "./games/balloonRescue/BalloonRescue";
+import Fishing from "./games/fishing/Fishing";
 import SessionIntro from "./session/SessionIntro";
 import SessionSummary from "./session/SessionSummary";
 import { TODAY_PLAN, markPlanDone, newSessionId } from "./session/plan";
@@ -32,6 +33,7 @@ const GAME_SCREENS = {
   "tilt-maze": memo(TiltMaze),
   "squeeze-pop": memo(SqueezePop),
   "balloon-rescue": memo(BalloonRescue),
+  fishing: memo(Fishing),
 };
 
 function App() {
