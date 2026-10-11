@@ -2597,6 +2597,14 @@ button.game-card:hover {
 .bl-pad button:nth-child(3) { grid-area: right; }
 .bl-pad button:nth-child(4) { grid-area: down; }
 
+.bl-pad--row {
+  grid-template-areas: "left right";
+  grid-template-columns: repeat(2, 76px);
+  gap: 12px;
+}
+.bl-pad--row button:nth-child(1) { grid-area: left; }
+.bl-pad--row button:nth-child(2) { grid-area: right; }
+
 .bl-pad button:active {
   background: rgba(94, 234, 212, 0.3);
 }

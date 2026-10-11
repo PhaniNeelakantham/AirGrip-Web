@@ -29,6 +29,7 @@ export default function BaselineCard({ demoMode, onStart }) {
       <span className="baseline-row-text">
         <strong>Your baseline</strong> · squeeze {squeeze} psi · tilt {baseline.pitchUp}°/{baseline.pitchDown}° · turn{" "}
         {baseline.rollRight}°/{baseline.rollLeft}°
+        {Number.isFinite(baseline.yawRight) && ` · wave ${baseline.yawRight}°/${baseline.yawLeft}°`}
       </span>
       <span className="baseline-redo">
         Redo <ChevronRight size={16} aria-hidden="true" />

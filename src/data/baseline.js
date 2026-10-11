@@ -3,7 +3,8 @@ import { saveCalibration } from "./gripCalibration";
 
 // The player's starting point from the Baseline assessment: grip range
 // (relaxed + comfortable max, psi) and wrist range in each direction (degrees
-// from "level"), plus which way the sensor reads for "up" and "right" on
+// from "level": tilt = pitch, turn = roll, wave side to side = yaw; yaw
+// fields are missing on baselines taken before it was added), plus which way the sensor reads for "up" and "right" on
 // this player's device. Real results are saved in this browser; demo results
 // only for this visit, since demo data is never saved.
 const STORAGE_KEY = "aquagrip.baseline.v1";

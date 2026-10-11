@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bluetooth, Check, Hand, Move, RotateCw, ScanLine, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bluetooth, Check, Hand, Move, MoveLeft, MoveRight, RotateCw, ScanLine, X } from "lucide-react";
 import { angleDelta, toAngles } from "../ble/orientation";
 import { getBaseline, saveBaseline } from "../data/baseline";
 import { useDevicePause } from "../games/useDevicePause";
@@ -23,6 +23,25 @@ const STEPS = [
   { id: "down", kind: "wrist", axis: "pitch", opposite: "up", icon: ArrowDown, title: "Now tilt it down", sub: "As far as is comfortable, then hold it there.", seconds: 4 },
   { id: "right", kind: "wrist", axis: "roll", icon: RotateCw, title: "Turn your wrist to the right", sub: "Like turning a doorknob. Go as far as is comfortable.", seconds: 4 },
   { id: "left", kind: "wrist", axis: "roll", opposite: "right", icon: RotateCw, title: "Now turn it to the left", sub: "Like turning a doorknob the other way.", seconds: 4 },
+  {
+    id: "sideRight",
+    kind: "wrist",
+    axis: "yaw",
+    icon: MoveRight,
+    title: "Wave your hand to the right",
+    sub: "Palm down, swing just your hand sideways. Keep your forearm still on the table.",
+    seconds: 4,
+  },
+  {
+    id: "sideLeft",
+    kind: "wrist",
+    axis: "yaw",
+    opposite: "sideRight",
+    icon: MoveLeft,
+    title: "Now wave it to the left",
+    sub: "Swing just your hand the other way. Keep your forearm still.",
+    seconds: 4,
+  },
 ];
 
 const READY_S = 1.6; // instruction shown before measuring starts
@@ -33,6 +52,7 @@ const MIN_SQUEEZE = { demo: 2, real: 0.5 }; // psi above relaxed needed to count
 const MIN_WRIST_DEG = 3; // less than this = we didn't see the movement
 const DEMO_MAX_PSI = 10;
 const DEMO_TILT_MAX = 55;
+const DEMO_YAW_SCALE = 0.55; // side-to-side range is naturally smaller (about 30°)
 
 const isKey = (e, names) => names.includes(e.key) || names.includes(e.code);
 
@@ -76,7 +96,7 @@ function Ring({ fill, mode, timeProgress, children }) {
   );
 }
 
-function HoldPad({ held, wristKeys }) {
+function HoldPad({ held, wristKeys, sideways }) {
   const press = (key, down) => (e) => {
     e.preventDefault();
     if (down) held.current.add(key);
@@ -94,6 +114,14 @@ function HoldPad({ held, wristKeys }) {
       <button className="bl-hold" {...handlers("squeeze")}>
         <Hand size={22} aria-hidden="true" /> Hold to squeeze <span>(or Space)</span>
       </button>
+    );
+  }
+  if (sideways) {
+    return (
+      <div className="bl-pad bl-pad--row">
+        <button aria-label="Wave left" {...handlers("left")}><ArrowLeft size={22} /></button>
+        <button aria-label="Wave right" {...handlers("right")}><ArrowRight size={22} /></button>
+      </div>
     );
   }
   return (
@@ -162,7 +190,7 @@ export default function BaselineAssessment({
   // Measurements so far. Kept outside the sequence so retrying one wrist step
   // doesn't throw away the earlier ones.
   const startAt = useRef({ index: 0, stage: "ready" });
-  const freshAcc = () => ({ restSum: 0, restN: 0, rest: 0, peak: 0, centerP: 0, centerR: 0, centerN: 0, center: { pitch: 0, roll: 0 } });
+  const freshAcc = () => ({ restSum: 0, restN: 0, rest: 0, peak: 0, centerP: 0, centerR: 0, centerY: 0, yawRef: null, centerN: 0, center: { pitch: 0, roll: 0, yaw: 0 } });
   const accRef = useRef(freshAcc());
   const wristRef = useRef({}); // id -> { sign, mag }
   const [retry, setRetry] = useState(null); // { kind: "grip" | "wrist", index }
@@ -172,7 +200,7 @@ export default function BaselineAssessment({
     if (phase !== "measure") return;
     let raf;
     let last = performance.now();
-    const demo = { psi: 0, pitch: 0, roll: 0 };
+    const demo = { psi: 0, pitch: 0, roll: 0, yaw: 0 };
     const minSqueeze = demoMode ? MIN_SQUEEZE.demo : MIN_SQUEEZE.real;
     const s = { index: startAt.current.index, stage: startAt.current.stage, t: 0 };
     const acc = accRef.current;
@@ -187,15 +215,20 @@ export default function BaselineAssessment({
       demo.psi = h.has("squeeze") ? Math.min(DEMO_MAX_PSI, demo.psi + 6 * dt) : Math.max(0, demo.psi - 32 * dt);
       const ease = (v, target) => v + Math.max(-60 * dt, Math.min(60 * dt, target - v));
       demo.pitch = ease(demo.pitch, (h.has("up") ? DEMO_TILT_MAX : 0) - (h.has("down") ? DEMO_TILT_MAX : 0));
-      demo.roll = ease(demo.roll, (h.has("right") ? DEMO_TILT_MAX : 0) - (h.has("left") ? DEMO_TILT_MAX : 0));
-      return { psi: demo.psi, angles: { pitch: demo.pitch, roll: demo.roll, yaw: 0 } };
+      const side = (h.has("right") ? DEMO_TILT_MAX : 0) - (h.has("left") ? DEMO_TILT_MAX : 0);
+      // Left/right keys turn during the turn steps and wave during the wave steps.
+      const waving = STEPS[s.index].axis === "yaw";
+      demo.roll = ease(demo.roll, waving ? 0 : side);
+      demo.yaw = ease(demo.yaw, waving ? side * DEMO_YAW_SCALE : 0);
+      return { psi: demo.psi, angles: { pitch: demo.pitch, roll: demo.roll, yaw: demo.yaw } };
     };
 
     const finishStep = (step) => {
       if (step.kind === "rest") acc.rest = acc.restN ? acc.restSum / acc.restN : 0;
       if (step.kind === "grip" && acc.peak - acc.rest < minSqueeze) return "retry-grip";
       if (step.kind === "center") {
-        acc.center = { pitch: acc.centerP / Math.max(1, acc.centerN), roll: acc.centerR / Math.max(1, acc.centerN) };
+        const n = Math.max(1, acc.centerN);
+        acc.center = { pitch: acc.centerP / n, roll: acc.centerR / n, yaw: (acc.yawRef ?? 0) + acc.centerY / n };
       }
       if (step.kind === "wrist") {
         if (step.opposite) {
@@ -245,6 +278,9 @@ export default function BaselineAssessment({
         } else if (step.kind === "center") {
           acc.centerP += angles.pitch;
           acc.centerR += angles.roll;
+          // Yaw can sit near the +/-180 seam, so average offsets from the first sample.
+          if (acc.yawRef === null) acc.yawRef = angles.yaw;
+          acc.centerY += angleDelta(angles.yaw, acc.yawRef);
           acc.centerN++;
           fill = s.t / step.seconds;
           live = "Hold still";
@@ -285,6 +321,9 @@ export default function BaselineAssessment({
               rollLeft: Math.round(wrist.left.mag),
               pitchUpSign: wrist.up.sign,
               rollRightSign: wrist.right.sign,
+              yawRight: Math.round(wrist.sideRight.mag),
+              yawLeft: Math.round(wrist.sideLeft.mag),
+              yawRightSign: wrist.sideRight.sign,
               at: Date.now(),
             };
             saveBaseline(demoMode, baseline);
@@ -352,6 +391,7 @@ export default function BaselineAssessment({
             <li>Relax, then squeeze</li>
             <li>Tilt up and down</li>
             <li>Turn right and left</li>
+            <li>Wave side to side</li>
           </ol>
           {notice && <p className="bl-notice">{notice}</p>}
           {previous && (
@@ -392,7 +432,7 @@ export default function BaselineAssessment({
               <span key={st.id} className={i < view.index ? "is-done" : i === view.index ? "is-now" : ""} />
             ))}
           </div>
-          {showDemoPad && <HoldPad held={held} wristKeys={step.kind === "wrist"} />}
+          {showDemoPad && <HoldPad held={held} wristKeys={step.kind === "wrist"} sideways={step.axis === "yaw"} />}
         </div>
       )}
 
@@ -457,6 +497,12 @@ export default function BaselineAssessment({
               <span>Turn right / left</span>
               <strong>
                 {result.rollRight}° / {result.rollLeft}°
+              </strong>
+            </div>
+            <div>
+              <span>Wave right / left</span>
+              <strong>
+                {result.yawRight}° / {result.yawLeft}°
               </strong>
             </div>
           </div>
