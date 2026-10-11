@@ -12,6 +12,8 @@ import BalloonRescue from "./games/balloonRescue/BalloonRescue";
 import SessionIntro from "./session/SessionIntro";
 import SessionSummary from "./session/SessionSummary";
 import { TODAY_PLAN, markPlanDone, newSessionId } from "./session/plan";
+import BaselineAssessment from "./baseline/BaselineAssessment";
+import { getBaseline } from "./data/baseline";
 
 const TRANSPORT_KEY = "aquagrip.transport";
 
@@ -71,9 +73,24 @@ function App() {
   // ---- Today's guided session: intro -> each game in order -> summary ----
   const [guided, setGuided] = useState(null); // { stage, id, step, results, startedAt }
 
+  // ---- Baseline assessment (full screen); returns to wherever it was opened ----
+  const [baselineOpen, setBaselineOpen] = useState(null); // { thenSession } | null
+  const openBaseline = useCallback(() => setBaselineOpen({ thenSession: false }), []);
+
   const openSession = () => {
+    // The games are tuned from the baseline, so take it first if it's missing.
+    if (!getBaseline(demoMode)) {
+      setBaselineOpen({ thenSession: true });
+      return;
+    }
     setGuided({ stage: "intro" });
     window.scrollTo({ top: 0 });
+  };
+  const closeBaseline = (done) => {
+    const thenSession = baselineOpen?.thenSession;
+    setBaselineOpen(null);
+    window.scrollTo({ top: 0 });
+    if (done && thenSession) setGuided({ stage: "intro" });
   };
   const startSession = () => {
     setGuided({ stage: "game", id: newSessionId(), step: 0, results: [], startedAt: Date.now() });
@@ -109,6 +126,19 @@ function App() {
         : null,
     [guidedStage, guidedStep]
   );
+
+  if (baselineOpen) {
+    return (
+      <BaselineAssessment
+        demoMode={demoMode}
+        connectionState={sensor.connectionState}
+        readingRef={sensor.readingRef}
+        lastDataAtRef={sensor.lastDataAtRef}
+        onReconnect={sensor.connect}
+        onClose={closeBaseline}
+      />
+    );
+  }
 
   if (guidedStage === "intro") {
     return (
@@ -153,6 +183,7 @@ function App() {
           demoMode={demoMode}
           onExit={endSession}
           onReconnect={sensor.connect}
+          onOpenBaseline={openBaseline}
           sessionStep={sessionStep}
           sessionGroupId={guided.id}
           onNext={nextStep}
@@ -172,6 +203,7 @@ function App() {
           demoMode={demoMode}
           onExit={leaveGame}
           onReconnect={sensor.connect}
+          onOpenBaseline={openBaseline}
         />
       </main>
     );
@@ -185,6 +217,7 @@ function App() {
             sessions={sessions}
             onNavigate={navigate}
             onStartSession={openSession}
+            onOpenBaseline={openBaseline}
             connectionState={sensor.connectionState}
             demoMode={demoMode}
           />

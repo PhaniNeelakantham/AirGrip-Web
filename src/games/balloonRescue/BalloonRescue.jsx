@@ -544,7 +544,7 @@ export default function BalloonRescue({
                             </ol>
                             {demoMode && <p className="overlay-note">Demo mode: this game won't be saved to your progress.</p>}
                             {!demoMode && !getCalibration(false) && canStart && (
-                                <p className="overlay-note">Tip: do the grip check in Squeeze Pop first for the best pump feel.</p>
+                                <p className="overlay-note">Tip: take the baseline assessment on Home first for the best pump feel.</p>
                             )}
                             {!canStart && (
                                 <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>

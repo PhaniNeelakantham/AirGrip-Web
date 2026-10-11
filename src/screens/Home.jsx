@@ -9,8 +9,11 @@ import ScoreRing from "../components/ScoreRing";
 import StatTile from "../components/StatTile";
 import WeekStreak from "../components/WeekStreak";
 import TodayCard from "../session/TodayCard";
+import BaselineCard from "../baseline/BaselineCard";
+import { useBaseline } from "../data/baseline";
 
-export default function Home({ sessions, onNavigate, onStartSession, connectionState, demoMode }) {
+export default function Home({ sessions, onNavigate, onStartSession, onOpenBaseline, connectionState, demoMode }) {
+  const baseline = useBaseline(demoMode);
   const data = useMemo(() => {
     const { days, sessionsThisWeek } = weekOverview(sessions);
     const { current, baseline } = baselineForRange(sessions, 30);
@@ -56,7 +59,10 @@ export default function Home({ sessions, onNavigate, onStartSession, connectionS
         <h1 className="title">Welcome back</h1>
       </header>
 
+      {/* No baseline yet: lead with it. Done: a small summary under today's session. */}
+      {!baseline && <BaselineCard demoMode={demoMode} onStart={onOpenBaseline} />}
       <TodayCard demoMode={demoMode} onStart={onStartSession} />
+      {baseline && <BaselineCard demoMode={demoMode} onStart={onOpenBaseline} />}
 
       <section className="hero" aria-label="This week">
         <div className="hero-text">

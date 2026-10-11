@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Compass, PartyPopper, RotateCw, Timer, X } from "lucide-react";
 import { angleDelta, toAngles } from "../../ble/orientation";
 import { createTremorTracker } from "../metrics";
+import { getBaseline, tiltTuning } from "../../data/baseline";
 import { addSession } from "../../data/sessionStore";
 import { useElementWidth } from "../../hooks/useElementWidth";
 import { generateMaze, resolveCollisions, wallRects } from "./maze";
@@ -14,17 +15,13 @@ const ROWS = 8;
 const WALL = 0.14; // wall thickness, in cells
 const BALL_R = 0.26;
 const MAX_SPEED = 1.6; // cells per second at full tilt
-const MAX_TILT = 40; // degrees of tilt for full speed
-const DEADZONE = 4; // degrees ignored so a resting hand keeps the ball still
 const KEY_RAMP = 140; // degrees per second the arrow keys ease tilt in/out
 const GOAL_RADIUS = 0.35;
 
-// Which wrist motion drives which direction. Signs may need flipping once
-// the team sees how the sensor is mounted on the real device.
-const AXIS_MAP = {
-  x: { axis: "roll", sign: 1 }, // palm turn -> left/right
-  y: { axis: "pitch", sign: -1 }, // tilt up/down -> up/down
-};
+// Palm turn (roll) moves the ball left/right; tilting (pitch) moves it
+// up/down. How much tilt gives full speed in each direction, the dead zone,
+// and which way the sensor reads "up"/"right" come from the player's
+// Baseline assessment (see tiltTuning); without one, 40 degrees each way.
 
 const KEY_DIRS = {
   ArrowLeft: "left",
@@ -56,10 +53,12 @@ function readColors() {
   };
 }
 
-function speedFromTilt(deg) {
+// fullPos/fullNeg: degrees for full speed in the + and - screen directions.
+function speedFromTilt(deg, fullPos, fullNeg, deadzone) {
   const mag = Math.abs(deg);
-  if (mag < DEADZONE) return 0;
-  const t = Math.min(1, (mag - DEADZONE) / (MAX_TILT - DEADZONE));
+  if (mag < deadzone) return 0;
+  const full = deg > 0 ? fullPos : fullNeg;
+  const t = Math.min(1, (mag - deadzone) / Math.max(1, full - deadzone));
   return Math.sign(deg) * t * MAX_SPEED;
 }
 
@@ -100,10 +99,12 @@ export default function TiltMaze({
   demoMode,
   onExit,
   onReconnect,
+  onOpenBaseline,
   sessionStep = null,
   sessionGroupId = null,
   onNext,
 }) {
+  const tuned = tiltTuning(getBaseline(demoMode)).tuned;
   const [phase, setPhase] = useState("intro"); // intro | playing | done
   const link = useDevicePause({ active: phase === "playing", demoMode, connectionState, lastDataAtRef });
   const [maze, setMaze] = useState(() => generateMaze(COLS, ROWS));
@@ -249,7 +250,7 @@ export default function TiltMaze({
           avgForcePsi: null,
           reps: null,
           rotationRangeDeg: rangeDeg,
-          // advanced: range per direction + wrist steadiness (X = palm turn, Y = tilt; see AXIS_MAP)
+          // advanced: range per direction + wrist steadiness (X = palm turn, Y = tilt)
           rollRangeDeg: Math.round(rg.maxX - rg.minX),
           pitchRangeDeg: Math.round(rg.maxY - rg.minY),
           ...tremor.current.tracker.result(),
@@ -271,20 +272,23 @@ export default function TiltMaze({
     let lastUi = 0;
 
     // Current tilt in degrees: x > 0 = right, y > 0 = down.
+    const tune = tiltTuning(getBaseline(demoMode));
+    const full = tune.full;
     const readTilt = (dt) => {
       if (demoMode) {
         const k = keyTilt.current;
         const h = held.current;
-        const targetX = (h.has("right") ? MAX_TILT : 0) - (h.has("left") ? MAX_TILT : 0);
-        const targetY = (h.has("down") ? MAX_TILT : 0) - (h.has("up") ? MAX_TILT : 0);
+        const targetX = (h.has("right") ? full.right : 0) - (h.has("left") ? full.left : 0);
+        const targetY = (h.has("down") ? full.down : 0) - (h.has("up") ? full.up : 0);
         const ramp = KEY_RAMP * dt;
         k.x += Math.max(-ramp, Math.min(ramp, targetX - k.x));
         k.y += Math.max(-ramp, Math.min(ramp, targetY - k.y));
         return { x: k.x, y: k.y };
       }
       const angles = toAngles(reading.current);
-      const axis = (m) => angleDelta(angles[m.axis], center.current[m.axis]) * m.sign;
-      return { x: axis(AXIS_MAP.x), y: axis(AXIS_MAP.y) };
+      const rel = (axis) => angleDelta(angles[axis], center.current[axis]);
+      // Screen right = the "right" turn from the baseline; screen up is -y.
+      return { x: rel("roll") * tune.rollRightSign, y: -rel("pitch") * tune.pitchUpSign };
     };
 
     const step = (now) => {
@@ -316,16 +320,18 @@ export default function TiltMaze({
 
       const b = ball.current;
       const ease = 1 - Math.exp(-dt * 10); // smooth start/stop
-      b.vx += (speedFromTilt(tilt.x) - b.vx) * ease;
-      b.vy += (speedFromTilt(tilt.y) - b.vy) * ease;
+      b.vx += (speedFromTilt(tilt.x, full.right, full.left, tune.deadzone) - b.vx) * ease;
+      b.vy += (speedFromTilt(tilt.y, full.down, full.up, tune.deadzone) - b.vy) * ease;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       resolveCollisions(b, BALL_R, rects);
       draw();
 
       if (indicatorRef.current) {
-        const clamp = (v) => Math.max(-1, Math.min(1, v / MAX_TILT));
-        indicatorRef.current.style.transform = `translate(${clamp(tilt.x) * 22}px, ${clamp(tilt.y) * 22}px)`;
+        const norm = (v, pos, neg) => Math.max(-1, Math.min(1, v / (v > 0 ? pos : neg)));
+        const ix = norm(tilt.x, full.right, full.left) * 22;
+        const iy = norm(tilt.y, full.down, full.up) * 22;
+        indicatorRef.current.style.transform = `translate(${ix}px, ${iy}px)`;
       }
 
       if (Math.hypot(b.x - (COLS - 0.5), b.y - (ROWS - 0.5)) < GOAL_RADIUS) {
@@ -398,6 +404,17 @@ export default function TiltMaze({
                 <li>{demoMode ? "Use the arrow keys or the arrows below." : "Tilt your wrist to roll the ball."}</li>
                 <li>Reach the flag in the corner to finish.</li>
               </ol>
+              {tuned ? (
+                <p className="overlay-note">Ball speed is tuned to your wrist range from your baseline.</p>
+              ) : (
+                <p className="overlay-note">
+                  Tip: take the{" "}
+                  <button className="link-btn link-btn--inline" onClick={onOpenBaseline}>
+                    baseline assessment
+                  </button>{" "}
+                  so the ball's speed matches your wrist range.
+                </p>
+              )}
               {demoMode && <p className="overlay-note">Demo mode: this game won't be saved to your progress.</p>}
               {!canStart && (
                 <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>

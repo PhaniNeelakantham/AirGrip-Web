@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, CircleDot, Hand, PartyPopper, Repeat, Trophy, X } from "lucide-react";
+import { CircleDot, Hand, PartyPopper, Repeat, Trophy, X } from "lucide-react";
 import { addSession } from "../../data/sessionStore";
-import { getCalibration, saveCalibration } from "../../data/gripCalibration";
+import { getCalibration } from "../../data/gripCalibration";
 import { TARGETS, createRepCounter, stepBubble, toLevel, REP_LOW } from "./logic";
 import { useDevicePause } from "../useDevicePause";
 import ConnectionPause from "../ConnectionPause";
@@ -15,12 +15,9 @@ const GAP_SECONDS = 0.9;
 const REST_EVERY = 5; // pops between rest breaks
 const REST_SECONDS = 4;
 const FINISH_DELAY = 0.7; // let the last pop animation play
-const RELAX_SECONDS = 2.5;
-const CAL_SQUEEZE_SECONDS = 5;
 const DEMO_MAX_PSI = 10;
 const DEMO_RISE = 6; // pretend psi per second while the button is held
 const DEMO_FALL = 32; // a real hand lets go fast, so the pretend grip drops quickly
-const MIN_RANGE = { demo: 2, real: 0.5 }; // smallest squeeze the grip check accepts
 const BUBBLE_SIZE = 112;
 
 function randomTarget(prev) {
@@ -76,34 +73,6 @@ function SqueezeMeter({ level, target, fillRef }) {
   );
 }
 
-// Live squeeze during the grip check, in psi above the relaxed hand. The
-// scale grows with the best squeeze so the bar stays meaningful whether the
-// player's grip is weak or strong; the line marks the best so far.
-function CalSqueezeMeter({ nowPsi = 0, bestPsi = 0 }) {
-  const scale = Math.max(4, bestPsi * 1.25);
-  const pct = (v) => `${Math.min(1, v / scale) * 100}%`;
-  return (
-    <div className="cal-squeeze">
-      <div className="cal-squeeze-head">
-        <span>Your squeeze</span>
-        <strong>{nowPsi.toFixed(1)} psi</strong>
-      </div>
-      <div
-        className="cal-squeeze-track"
-        role="meter"
-        aria-label="Your squeeze"
-        aria-valuemin={0}
-        aria-valuemax={Math.round(scale)}
-        aria-valuenow={Number(nowPsi.toFixed(1))}
-      >
-        <div className="cal-squeeze-fill" style={{ width: pct(nowPsi) }} />
-        {bestPsi > 0 && <div className="cal-squeeze-best" style={{ left: pct(bestPsi) }} />}
-      </div>
-      <div className="cal-squeeze-best-text">Best: {bestPsi.toFixed(1)} psi</div>
-    </div>
-  );
-}
-
 function HoldButton({ held }) {
   const set = (down) => (e) => {
     e.preventDefault();
@@ -133,26 +102,16 @@ export default function SqueezePop({
   demoMode,
   onExit,
   onReconnect,
+  onOpenBaseline,
   sessionStep = null,
   sessionGroupId = null,
   onNext,
 }) {
-  const [phase, setPhase] = useState("intro"); // intro | calibrate | playing | done
+  // The player's grip range comes from the Baseline assessment (Home).
+  const [phase, setPhase] = useState("intro"); // intro | playing | done
   const [view, setView] = useState(null);
   const [result, setResult] = useState(null);
-  const [calFailed, setCalFailed] = useState(null); // null | "squeeze" | "connection"
-  const link = useDevicePause({
-    active: phase === "playing" || phase === "calibrate",
-    demoMode,
-    connectionState,
-    lastDataAtRef,
-  });
-
-  // A grip check interrupted by a dropped link can't be trusted: cancel it.
-  if (phase === "calibrate" && link.paused) {
-    setPhase("intro");
-    setCalFailed("connection");
-  }
+  const link = useDevicePause({ active: phase === "playing", demoMode, connectionState, lastDataAtRef });
 
   const held = useRef(false);
   const demoPsi = useRef(0);
@@ -179,7 +138,7 @@ export default function SqueezePop({
   // Space bar squeezes in demo mode. Only swallowed while a round is
   // running, so Space still works on buttons in the menus.
   useEffect(() => {
-    const active = phase === "calibrate" || phase === "playing";
+    const active = phase === "playing";
     const onDown = (e) => {
       if (e.code !== "Space" || !active) return;
       e.preventDefault();
@@ -200,55 +159,6 @@ export default function SqueezePop({
       window.removeEventListener("blur", release);
     };
   }, [phase, demoMode]);
-
-  // Grip check: average the relaxed reading, then record the best squeeze.
-  useEffect(() => {
-    if (phase !== "calibrate") return;
-    let raf;
-    let last = performance.now();
-    const startedAt = last;
-    let restSum = 0;
-    let restCount = 0;
-    let rest = null;
-    let peak = -Infinity;
-    const minRange = demoMode ? MIN_RANGE.demo : MIN_RANGE.real;
-
-    const step = (now) => {
-      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
-      last = now;
-      const psi = readPsi(dt);
-      const t = (now - startedAt) / 1000;
-
-      if (t < RELAX_SECONDS) {
-        restSum += psi;
-        restCount++;
-        setView({ calStep: "relax", progress: t / RELAX_SECONDS });
-      } else if (t < RELAX_SECONDS + CAL_SQUEEZE_SECONDS) {
-        if (rest === null) rest = restCount ? restSum / restCount : psi;
-        peak = Math.max(peak, psi);
-        setView({
-          calStep: "squeeze",
-          progress: (t - RELAX_SECONDS) / CAL_SQUEEZE_SECONDS,
-          felt: peak - rest >= minRange,
-          nowPsi: Math.max(0, psi - rest), // squeeze above the relaxed reading
-          bestPsi: Math.max(0, peak - rest),
-        });
-      } else {
-        if (peak - rest >= minRange) {
-          saveCalibration(demoMode, { restPsi: rest, maxPsi: peak, at: Date.now() });
-          setView(null);
-          setPhase("playing");
-        } else {
-          setCalFailed("squeeze");
-          setPhase("intro");
-        }
-        return;
-      }
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [phase, readPsi, demoMode]);
 
   const finish = useCallback(
     (g) => {
@@ -419,14 +329,14 @@ export default function SqueezePop({
     return () => cancelAnimationFrame(raf);
   }, [phase, readPsi, demoMode, finish, link.pausedRef, reading, lastDataAtRef]);
 
-  const begin = (forceCalibrate) => {
+  const begin = () => {
+    if (!hasCalibration) return; // the start card offers the baseline instead
     held.current = false;
     demoPsi.current = 0;
-    link.resume(); // clear any pause left over from an interrupted grip check
-    setCalFailed(null);
+    link.resume();
     setResult(null);
     setView(null);
-    setPhase(forceCalibrate || !getCalibration(demoMode) ? "calibrate" : "playing");
+    setPhase("playing");
   };
 
   const playing = phase === "playing" && view?.effects !== undefined;
@@ -499,34 +409,25 @@ export default function SqueezePop({
                 <li>Then relax your hand to pop it.</li>
                 <li>Pop {TOTAL_BUBBLES} bubbles. No rush: missed ones just float away.</li>
               </ol>
-              {calFailed === "squeeze" && (
-                <p className="overlay-note overlay-note--warn">
-                  We couldn't feel a squeeze. {demoMode ? "Hold the button longer" : "Check the grip is connected"} and
-                  try again.
+              {!hasCalibration && (
+                <p className="overlay-note">
+                  First, take the 1-minute baseline assessment so the bubbles match your grip.
                 </p>
-              )}
-              {calFailed === "connection" && (
-                <p className="overlay-note overlay-note--warn">
-                  AquaGrip disconnected during the grip check. Reconnect and try again.
-                </p>
-              )}
-              {!hasCalibration && canStart && (
-                <p className="overlay-note">First, a quick 8-second grip check to find your comfortable range.</p>
               )}
               {demoMode && <p className="overlay-note">Demo mode: this game won't be saved to your progress.</p>}
               {!canStart && (
                 <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
               )}
-              {canStart ? (
+              {!hasCalibration ? (
+                <button className="btn btn-primary btn-block" onClick={onOpenBaseline}>
+                  Start baseline assessment
+                </button>
+              ) : canStart ? (
                 <>
-                  <button className="btn btn-primary btn-block" onClick={() => begin(false)}>
+                  <button className="btn btn-primary btn-block" onClick={begin}>
                     Start
                   </button>
-                  {hasCalibration && (
-                    <button className="link-btn" style={{ marginTop: 8 }} onClick={() => begin(true)}>
-                      Redo grip check
-                    </button>
-                  )}
+                  <p className="overlay-note">Bubble strengths are set from your baseline.</p>
                 </>
               ) : (
                 <button
@@ -550,38 +451,6 @@ export default function SqueezePop({
             onResume={link.resume}
             onEnd={onExit}
           />
-        )}
-
-        {phase === "calibrate" && view?.calStep && (
-          <div className="game-overlay">
-            <div className="overlay-card" aria-live="polite">
-              <div className={`overlay-icon ${view.calStep === "relax" ? "tint-mint" : "tint-peach"}`}>
-                <Hand size={30} aria-hidden="true" />
-              </div>
-              <h2>{view.calStep === "relax" ? "Relax your hand" : "Squeeze as hard as you comfortably can"}</h2>
-              <p className="overlay-note">
-                {view.calStep === "relax"
-                  ? "Rest your hand gently on the grip."
-                  : "Keep squeezing until the time runs out. It shouldn't hurt."}
-              </p>
-              {view.calStep === "squeeze" && <CalSqueezeMeter nowPsi={view.nowPsi} bestPsi={view.bestPsi} />}
-              {view.calStep === "squeeze" && <div className="cal-label">Time</div>}
-              <div className="cal-bar">
-                <div className="cal-fill" style={{ width: `${Math.min(1, view.progress) * 100}%` }} />
-              </div>
-              {view.calStep === "squeeze" && (
-                <p className={`cal-felt${view.felt ? " is-on" : ""}`}>
-                  {view.felt ? (
-                    <>
-                      <Check size={16} strokeWidth={3} aria-hidden="true" /> Squeeze felt
-                    </>
-                  ) : (
-                    "Waiting for your squeeze…"
-                  )}
-                </p>
-              )}
-            </div>
-          </div>
         )}
 
         {phase === "done" && result && (
@@ -616,7 +485,7 @@ export default function SqueezePop({
               <ResultActions
                 sessionStep={sessionStep}
                 onNext={() => onNext?.(result)}
-                onPlayAgain={() => begin(false)}
+                onPlayAgain={begin}
                 onExit={onExit}
               />
             </div>
@@ -624,7 +493,7 @@ export default function SqueezePop({
         )}
       </div>
 
-      {(phase === "calibrate" || phase === "playing") &&
+      {phase === "playing" &&
         (demoMode ? (
           <HoldButton held={held} />
         ) : (
