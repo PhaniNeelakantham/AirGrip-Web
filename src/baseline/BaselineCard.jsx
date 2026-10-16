@@ -1,9 +1,11 @@
 import { ChevronRight, ScanLine } from "lucide-react";
 import { useBaseline } from "../data/baseline";
+import { useHand } from "../data/hand";
 
 // Home: invite a first baseline assessment; afterwards, a compact summary.
 export default function BaselineCard({ demoMode, onStart }) {
   const baseline = useBaseline(demoMode);
+  const hand = useHand();
 
   if (!baseline) {
     return (
@@ -13,7 +15,7 @@ export default function BaselineCard({ demoMode, onStart }) {
         </div>
         <div className="baseline-text">
           <strong>Find your starting point</strong>
-          <span>A 1-minute check of your grip and wrist, so every game matches what you can do.</span>
+          <span>A 1-minute check of your {hand} hand's grip and wrist, so every game matches what you can do.</span>
         </div>
         <button className="btn btn-primary baseline-btn" onClick={onStart}>
           Start
@@ -24,10 +26,10 @@ export default function BaselineCard({ demoMode, onStart }) {
 
   const squeeze = (baseline.maxPsi - baseline.restPsi).toFixed(1);
   return (
-    <button className="baseline-row" onClick={onStart} aria-label="Your baseline. Redo the baseline assessment">
+    <button className="baseline-row" onClick={onStart} aria-label={`Your ${hand}-hand baseline. Redo the baseline assessment`}>
       <ScanLine size={18} aria-hidden="true" />
       <span className="baseline-row-text">
-        <strong>Your baseline</strong> · squeeze {squeeze} psi · tilt {baseline.pitchUp}°/{baseline.pitchDown}° · turn{" "}
+        <strong>{hand === "left" ? "Left" : "Right"}-hand baseline</strong> · squeeze {squeeze} psi · tilt {baseline.pitchUp}°/{baseline.pitchDown}° · turn{" "}
         {baseline.rollRight}°/{baseline.rollLeft}°
         {Number.isFinite(baseline.yawRight) && ` · wave ${baseline.yawRight}°/${baseline.yawLeft}°`}
       </span>

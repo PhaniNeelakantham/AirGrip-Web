@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { getHand } from "./hand";
 
 // Real session history, saved in this browser only (localStorage).
 // Demo/sample sessions are never written here.
@@ -60,11 +61,12 @@ function subscribe(fn) {
 }
 
 // Games call this when a session ends. `session` needs: timestamp,
-// durationS, peakForcePsi, avgForcePsi, reps, rotationRangeDeg.
+// durationS, peakForcePsi, avgForcePsi, reps, rotationRangeDeg. It's
+// tagged with the hand being trained.
 export function addSession(session) {
   const current = getSnapshot();
   const id = current.reduce((max, s) => Math.max(max, s.id ?? 0), 0) + 1;
-  write([...current, { ...session, id }].sort((a, b) => a.timestamp - b.timestamp));
+  write([...current, { hand: getHand(), ...session, id }].sort((a, b) => a.timestamp - b.timestamp));
 }
 
 export function clearSessions() {

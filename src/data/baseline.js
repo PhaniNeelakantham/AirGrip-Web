@@ -1,15 +1,17 @@
 import { useSyncExternalStore } from "react";
 import { saveCalibration } from "./gripCalibration";
+import { getHand, subscribeHand } from "./hand";
 
 // The player's starting point from the Baseline assessment: grip range
 // (relaxed + comfortable max, psi) and wrist range in each direction (degrees
 // from "level": tilt = pitch, turn = roll, wave side to side = yaw; yaw
 // fields are missing on baselines taken before it was added), plus which way the sensor reads for "up" and "right" on
-// this player's device. Real results are saved in this browser; demo results
-// only for this visit, since demo data is never saved.
-const STORAGE_KEY = "aquagrip.baseline.v1";
-let demoBaseline = null;
-let saved; // undefined = not loaded yet
+// this player's device. One per hand. Real results are saved in this
+// browser; demo results only for this visit, since demo data is never saved.
+// (The right hand keeps the original key, from before hands existed.)
+const keyFor = (hand) => (hand === "left" ? "aquagrip.baseline.left.v1" : "aquagrip.baseline.v1");
+const demoBaseline = {};
+const saved = {};
 const listeners = new Set();
 
 const isValid = (b) =>
@@ -17,38 +19,43 @@ const isValid = (b) =>
   ["restPsi", "maxPsi", "pitchUp", "pitchDown", "rollRight", "rollLeft"].every((k) => Number.isFinite(b[k])) &&
   b.maxPsi > b.restPsi;
 
-export function getBaseline(demoMode) {
-  if (demoMode) return demoBaseline;
-  if (saved === undefined) {
+export function getBaseline(demoMode, hand = getHand()) {
+  if (demoMode) return demoBaseline[hand] ?? null;
+  if (!(hand in saved)) {
     try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      saved = isValid(parsed) ? parsed : null;
+      const parsed = JSON.parse(localStorage.getItem(keyFor(hand)));
+      saved[hand] = isValid(parsed) ? parsed : null;
     } catch {
-      saved = null;
+      saved[hand] = null;
     }
   }
-  return saved;
+  return saved[hand];
 }
 
-export function saveBaseline(demoMode, baseline) {
+export function saveBaseline(demoMode, baseline, hand = getHand()) {
   if (demoMode) {
-    demoBaseline = baseline;
+    demoBaseline[hand] = baseline;
   } else {
-    saved = baseline;
+    saved[hand] = baseline;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(baseline));
+      localStorage.setItem(keyFor(hand), JSON.stringify(baseline));
     } catch {
       // Storage blocked: kept for this visit only.
     }
   }
   // Grip games read their range from the grip calibration.
-  saveCalibration(demoMode, { restPsi: baseline.restPsi, maxPsi: baseline.maxPsi, at: baseline.at });
+  saveCalibration(demoMode, { restPsi: baseline.restPsi, maxPsi: baseline.maxPsi, at: baseline.at }, hand);
   listeners.forEach((fn) => fn());
 }
 
+// Also changes when the player switches hands.
 function subscribe(fn) {
   listeners.add(fn);
-  return () => listeners.delete(fn);
+  const offHand = subscribeHand(fn);
+  return () => {
+    listeners.delete(fn);
+    offHand();
+  };
 }
 
 export function useBaseline(demoMode) {

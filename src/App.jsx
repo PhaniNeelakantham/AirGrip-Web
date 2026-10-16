@@ -15,6 +15,7 @@ import SessionSummary from "./session/SessionSummary";
 import { TODAY_PLAN, markPlanDone, newSessionId } from "./session/plan";
 import BaselineAssessment from "./baseline/BaselineAssessment";
 import { getBaseline } from "./data/baseline";
+import { sessionHand, useHand } from "./data/hand";
 
 const TRANSPORT_KEY = "aquagrip.transport";
 
@@ -43,7 +44,10 @@ function App() {
   const [transport, setTransport] = useState(loadTransport);
   const sensor = useAquaGripSensor({ mock: demoMode, transport });
   const savedSessions = useSavedSessions();
-  const sessions = demoMode ? mockSessions : savedSessions;
+  // Each hand has its own progress. (Demo data isn't tied to a hand.)
+  const hand = useHand();
+  const handSessions = useMemo(() => savedSessions.filter((s) => sessionHand(s) === hand), [savedSessions, hand]);
+  const sessions = demoMode ? mockSessions : handSessions;
 
   const navigate = (next) => {
     setTab(next);
@@ -80,8 +84,9 @@ function App() {
   const openBaseline = useCallback(() => setBaselineOpen({ thenSession: false }), []);
 
   const openSession = () => {
-    // The games are tuned from the baseline, so take it first if it's missing.
-    if (!getBaseline(demoMode)) {
+    // The games are tuned from the baseline, so take it first if it's missing
+    // (optional in Demo mode, which has default ranges).
+    if (!demoMode && !getBaseline(false)) {
       setBaselineOpen({ thenSession: true });
       return;
     }

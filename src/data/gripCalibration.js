@@ -1,34 +1,47 @@
-// The player's grip range from the Squeeze Pop grip check: relaxed reading
-// and comfortable max, in psi. Real calibration is saved in this browser;
-// demo calibration lives in memory only, since demo data is never saved.
-const STORAGE_KEY = "aquagrip.gripCalibration.v1";
-let demoCalibration = null;
-let saved; // undefined = not loaded yet
+import { getHand } from "./hand";
+
+// The player's grip range from the Baseline assessment: relaxed reading and
+// comfortable max, in psi, for each hand. Real calibration is saved in this
+// browser; demo calibration lives in memory only, since demo data is never
+// saved. (The right hand keeps the original key, from before hands existed.)
+const keyFor = (hand) => (hand === "left" ? "aquagrip.gripCalibration.left.v1" : "aquagrip.gripCalibration.v1");
+const demoCalibration = {};
+const saved = {};
+
+// Demo mode can be played without a baseline: a pretend grip range that
+// matches the pretend squeeze (Space bar / Hold button).
+const DEMO_DEFAULT = { restPsi: 0, maxPsi: 8 };
 
 const isValid = (c) =>
   c && Number.isFinite(c.restPsi) && Number.isFinite(c.maxPsi) && c.maxPsi > c.restPsi;
 
-export function getCalibration(demoMode) {
-  if (demoMode) return demoCalibration;
-  if (saved === undefined) {
+export function getCalibration(demoMode, hand = getHand()) {
+  if (demoMode) return demoCalibration[hand] ?? null;
+  if (!(hand in saved)) {
     try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      saved = isValid(parsed) ? parsed : null;
+      const parsed = JSON.parse(localStorage.getItem(keyFor(hand)));
+      saved[hand] = isValid(parsed) ? parsed : null;
     } catch {
-      saved = null;
+      saved[hand] = null;
     }
   }
-  return saved;
+  return saved[hand];
 }
 
-export function saveCalibration(demoMode, calibration) {
+// What a grip game plays with: the real range, or in Demo mode the pretend
+// default when no baseline was taken.
+export function getPlayCalibration(demoMode) {
+  return getCalibration(demoMode) ?? (demoMode ? DEMO_DEFAULT : null);
+}
+
+export function saveCalibration(demoMode, calibration, hand = getHand()) {
   if (demoMode) {
-    demoCalibration = calibration;
+    demoCalibration[hand] = calibration;
     return;
   }
-  saved = calibration;
+  saved[hand] = calibration;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(calibration));
+    localStorage.setItem(keyFor(hand), JSON.stringify(calibration));
   } catch {
     // Storage blocked -- keep it for this visit only.
   }

@@ -165,6 +165,7 @@ const CSV_NAMES = {
 const CSV_COLUMNS = [
   ["date", (s) => new Date(s.timestamp).toISOString()],
   ["game", (s) => s.game ?? ""],
+  ["hand", (s) => s.hand ?? "right"],
   ["session_id", (s) => s.groupId ?? ""],
   ["duration_s", (s) => s.durationS],
   ["peak_squeeze_psi", (s) => s.peakForcePsi],

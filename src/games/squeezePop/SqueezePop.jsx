@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleDot, Hand, PartyPopper, Repeat, Trophy, X } from "lucide-react";
 import { addSession } from "../../data/sessionStore";
-import { getCalibration } from "../../data/gripCalibration";
+import { getBaseline } from "../../data/baseline";
+import { getPlayCalibration } from "../../data/gripCalibration";
 import { TARGETS, createRepCounter, stepBubble, toLevel, REP_LOW } from "./logic";
 import { useDevicePause } from "../useDevicePause";
 import ConnectionPause from "../ConnectionPause";
@@ -121,7 +122,9 @@ export default function SqueezePop({
 
   const connected = connectionState === "connected";
   const canStart = demoMode || connected;
-  const hasCalibration = getCalibration(demoMode) !== null;
+  // Demo mode plays with a default grip range; the baseline is optional there.
+  const hasCalibration = getPlayCalibration(demoMode) !== null;
+  const demoUntuned = demoMode && !getBaseline(true);
 
   const readPsi = useCallback(
     (dt) => {
@@ -193,7 +196,7 @@ export default function SqueezePop({
   // Main game loop.
   useEffect(() => {
     if (phase !== "playing") return;
-    const cal = getCalibration(demoMode);
+    const cal = getPlayCalibration(demoMode);
     const g = {
       bubble: null,
       wait: 0.6,
@@ -414,6 +417,15 @@ export default function SqueezePop({
                   First, take the 1-minute baseline assessment so the bubbles match your grip.
                 </p>
               )}
+              {demoUntuned && (
+                <p className="overlay-note">
+                  Optional:{" "}
+                  <button className="link-btn link-btn--inline" onClick={onOpenBaseline}>
+                    try the baseline assessment
+                  </button>{" "}
+                  to tune the bubble strengths. Not needed in Demo mode.
+                </p>
+              )}
               {demoMode && <p className="overlay-note">Demo mode: this game won't be saved to your progress.</p>}
               {!canStart && (
                 <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
@@ -427,7 +439,7 @@ export default function SqueezePop({
                   <button className="btn btn-primary btn-block" onClick={begin}>
                     Start
                   </button>
-                  <p className="overlay-note">Bubble strengths are set from your baseline.</p>
+                  {!demoUntuned && <p className="overlay-note">Bubble strengths are set from your baseline.</p>}
                 </>
               ) : (
                 <button

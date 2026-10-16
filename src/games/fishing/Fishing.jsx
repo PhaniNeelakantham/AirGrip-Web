@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Fish as FishIcon, Hand, Move, Timer, Trophy, X } from "lucide-react";
 import { addSession } from "../../data/sessionStore";
-import { getCalibration } from "../../data/gripCalibration";
+import { getCalibration, getPlayCalibration } from "../../data/gripCalibration";
 import { getBaseline, wristTuning } from "../../data/baseline";
 import { REP_LOW, createRepCounter, toLevel } from "../squeezePop/logic";
 import {
@@ -181,7 +181,8 @@ export default function Fishing({
   const connected = connectionState === "connected";
   const canStart = demoMode || connected;
   const baseline = getBaseline(demoMode);
-  const hasBaseline = baseline !== null && getCalibration(demoMode) !== null;
+  // Demo mode plays with default ranges; the baseline is optional there.
+  const hasBaseline = demoMode || (baseline !== null && getCalibration(false) !== null);
   const hasYaw = Number.isFinite(baseline?.yawRight);
 
   // Demo controls: arrow keys / WASD move, Space squeezes.
@@ -248,7 +249,7 @@ export default function Fishing({
   // Main game loop.
   useEffect(() => {
     if (phase !== "playing") return;
-    const cal = getCalibration(demoMode);
+    const cal = getPlayCalibration(demoMode);
     const tune = wristTuning(getBaseline(demoMode));
     const demo = { psi: 0, yaw: 0, pitch: 0, roll: 0 };
     const g = {
@@ -660,7 +661,16 @@ export default function Fishing({
                   First, take the 1-minute baseline assessment so every move matches your range.
                 </p>
               )}
-              {hasBaseline && !hasYaw && (
+              {demoMode && !baseline && (
+                <p className="overlay-note">
+                  Optional:{" "}
+                  <button className="link-btn link-btn--inline" onClick={onOpenBaseline}>
+                    try the baseline assessment
+                  </button>{" "}
+                  to tune every move to your range. Not needed in Demo mode.
+                </p>
+              )}
+              {baseline && !hasYaw && (
                 <p className="overlay-note">
                   Tip: redo the baseline on Home to tune the side-to-side aim to your wrist.
                 </p>

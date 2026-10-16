@@ -26,6 +26,7 @@ import StatTile from "../components/StatTile";
 import DemoBanner from "../components/DemoBanner";
 import { GAMES } from "../data/games";
 import AdvancedDetails from "../components/AdvancedDetails";
+import { useHand } from "../data/hand";
 
 const ADVANCED_KEY = "aquagrip.advancedOpen";
 function loadAdvancedOpen() {
@@ -78,6 +79,7 @@ function EmptyProgress({ onNavigate }) {
 }
 
 export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
+  const hand = useHand();
   const [rangeId, setRangeId] = useState("30d");
   const range = RANGE_OPTIONS.find((r) => r.id === rangeId);
 
@@ -122,7 +124,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
     <>
       {demoMode && <DemoBanner onNavigate={onNavigate} />}
       <header className="screen-header">
-        <div className="eyebrow">Progress</div>
+        <div className="eyebrow">Progress · {hand === "left" ? "Left" : "Right"} hand</div>
         <h1 className="title">How you're doing</h1>
       </header>
     </>

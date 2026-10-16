@@ -3,6 +3,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bluetooth, Check, Hand, Move
 import { angleDelta, toAngles } from "../ble/orientation";
 import { getBaseline, saveBaseline } from "../data/baseline";
 import { useDevicePause } from "../games/useDevicePause";
+import { useHand } from "../data/hand";
 
 // Full-screen guided check, in the spirit of Face ID setup: one instruction
 // at a time, a ring of ticks that lights up as you squeeze or move, and a
@@ -149,6 +150,7 @@ export default function BaselineAssessment({
   const connected = connectionState === "connected";
   const canStart = demoMode || connected;
   const previous = getBaseline(demoMode);
+  const hand = useHand();
 
   const link = useDevicePause({ active: phase === "measure", demoMode, connectionState, lastDataAtRef });
   if (phase === "measure" && link.paused) {
@@ -384,8 +386,8 @@ export default function BaselineAssessment({
           </Ring>
           <h1 className="bl-title">Baseline assessment</h1>
           <p className="bl-sub">
-            About one minute. We'll measure your grip and how far your wrist moves, so every game matches what you
-            can do today.
+            About one minute. Hold the AquaGrip in your <strong>{hand} hand</strong>. We'll measure your grip and how
+            far your wrist moves, so every game matches what you can do today.
           </p>
           <ol className="bl-steps">
             <li>Relax, then squeeze</li>

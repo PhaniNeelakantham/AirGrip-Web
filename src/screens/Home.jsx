@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { ArrowUpRight, Droplet, Gamepad2, Hand, RotateCw, TrendingUp } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowUpRight, Droplet, Gamepad2, Hand, RotateCw, Settings, TrendingUp } from "lucide-react";
 import { baselineForRange, improvementScore, percentChange, summarize } from "../data/scoring";
 import { WEEKLY_GOAL, currentStreak, greeting, scoreBand, statusText, weekOverview } from "../data/insights";
 import { GAMES } from "../data/games";
@@ -11,9 +11,11 @@ import WeekStreak from "../components/WeekStreak";
 import TodayCard from "../session/TodayCard";
 import BaselineCard from "../baseline/BaselineCard";
 import { useBaseline } from "../data/baseline";
+import SettingsSheet from "../components/SettingsSheet";
 
 export default function Home({ sessions, onNavigate, onStartSession, onOpenBaseline, connectionState, demoMode }) {
   const baseline = useBaseline(demoMode);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const data = useMemo(() => {
     const { days, sessionsThisWeek } = weekOverview(sessions);
     const { current, baseline } = baselineForRange(sessions, 30);
@@ -45,11 +47,19 @@ export default function Home({ sessions, onNavigate, onStartSession, onOpenBasel
           </span>
           AquaGrip
         </div>
-        <button className="status-chip" onClick={() => onNavigate("games")}>
-          <span className={`status-dot${connected ? " is-on" : ""}`} aria-hidden="true" />
-          {statusText(connectionState, demoMode)}
-        </button>
+        <div className="topbar-actions">
+          <button className="status-chip" onClick={() => onNavigate("games")}>
+            <span className={`status-dot${connected ? " is-on" : ""}`} aria-hidden="true" />
+            {statusText(connectionState, demoMode)}
+          </button>
+          <button className="icon-btn topbar-gear" onClick={() => setSettingsOpen(true)} aria-label="Settings">
+            <Settings size={20} aria-hidden="true" />
+          </button>
+        </div>
       </div>
+      {settingsOpen && (
+        <SettingsSheet demoMode={demoMode} onClose={() => setSettingsOpen(false)} onOpenBaseline={onOpenBaseline} />
+      )}
 
       <InstallCard />
       {demoMode && <DemoBanner onNavigate={onNavigate} />}
