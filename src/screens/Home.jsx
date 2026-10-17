@@ -44,9 +44,6 @@ export default function Home({ sessions, onNavigate, onStartSession, onOpenBasel
   return (
     <>
       <div className="topbar">
-        <div className="brand">
-          AquaGrip
-        </div>
         <div className="topbar-actions">
           <button className="status-chip" onClick={() => onNavigate("games")}>
             <span className={`status-dot${connected ? " is-on" : ""}`} aria-hidden="true" />
