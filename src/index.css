@@ -95,7 +95,7 @@ p {
 /* ---------- headers ---------- */
 .topbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 22px;
 }
@@ -3056,7 +3056,9 @@ button.game-card:hover {
 
 /* ---------- Settings (gear on Home) ---------- */
 .topbar-actions {
+  flex: 1;
   display: flex;
+  justify-content: space-between; /* status on the left, gear on the right */
   align-items: center;
   gap: 8px;
 }
