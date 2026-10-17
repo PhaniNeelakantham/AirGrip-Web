@@ -32,6 +32,7 @@ const SINK_SPEED = 0.5; // depth per second at full tilt (top to bottom in ~2 s)
 const REEL_UP = 0.1; // depth raised per unit of back-and-forth turning (bottom to out: ~3-4 turns)
 const OUT = -0.2; // depth when the hook is lifted out of the water
 const GRACE_S = 2; // after a catch or an escape, fish ignore the hook this long
+const YAW_ZERO_FADE = 0.3; // how fast the "enter in the middle" offset fades (reach per second)
 const SETTLED_SPEED = 0.12; // fish ignore a hook sinking or rising faster than this (depth/s)
 const DEMO_MAX_PSI = 10;
 const DEMO_RISE = 6;
@@ -364,7 +365,10 @@ export default function Fishing({
           : Math.max(0, demo.psi - DEMO_FALL * dt);
         // Left/right move the hook, Down tilts down (lowers it), Up turns the
         // wrist back and forth (reels). While a fish is on, left/right reel too.
-        if (g.stage === "fish" || g.stage === "escape") demo.yaw = clamp(demo.yaw + side * 1.1 * dt, -1, 1);
+        // While the hook is out of the water the pretend wave returns to center,
+        // so it always has the full range left and right once back in.
+        if (g.wasOut) demo.yaw = 0;
+        else if (g.stage === "fish" || g.stage === "escape") demo.yaw = clamp(demo.yaw + side * 1.1 * dt, -1, 1);
         demo.pitch = ease(demo.pitch, h.has("down") ? -1 : 0, 3);
         if (h.has("up")) demo.roll = Math.sin(g.elapsed * 9) * 0.8;
         else demo.roll = ease(demo.roll, g.stage === "reel" ? side * 0.8 : 0, 2.5);
@@ -453,6 +457,9 @@ export default function Fishing({
       const isOut = hookY <= L.surfaceY + 2;
       if (g.wasOut && !isOut) g.yawZero = inp.yaw;
       g.wasOut = isOut;
+      // ...then that offset fades over a few seconds, so if the hand was
+      // turned when the hook went in, the far side never stays out of reach.
+      if (!isOut) g.yawZero -= clamp(g.yawZero, -YAW_ZERO_FADE * dt, YAW_ZERO_FADE * dt);
       if (free) {
         // Out of the water the hook hangs from the rod tip.
         const aimX = L.W / 2 + clamp(inp.yaw - g.yawZero, -1, 1) * (L.W / 2 - 6);
