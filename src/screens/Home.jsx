@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowUpRight, Droplet, Gamepad2, Hand, RotateCw, Settings, TrendingUp } from "lucide-react";
+import { ArrowUpRight, Gamepad2, Hand, RotateCw, Settings, TrendingUp } from "lucide-react";
 import { baselineForRange, improvementScore, percentChange, summarize } from "../data/scoring";
 import { WEEKLY_GOAL, currentStreak, greeting, scoreBand, statusText, weekOverview } from "../data/insights";
 import { GAMES } from "../data/games";
@@ -45,9 +45,6 @@ export default function Home({ sessions, onNavigate, onStartSession, onOpenBasel
     <>
       <div className="topbar">
         <div className="brand">
-          <span className="brand-mark">
-            <Droplet size={20} strokeWidth={2.4} aria-hidden="true" />
-          </span>
           AquaGrip
         </div>
         <div className="topbar-actions">
