@@ -1,6 +1,7 @@
 import { CircleDot, Compass, Fish, Rocket } from "lucide-react";
 
 // Game catalog. Only games with `playable: true` have been built so far.
+// level: "easy" or "hard" -- the Games menu groups them that way.
 export const GAMES = [
   {
     id: "tilt-maze",
@@ -10,6 +11,7 @@ export const GAMES = [
     minutes: 2,
     tint: "lavender",
     icon: Compass,
+    level: "easy",
     playable: true,
   },
   {
@@ -20,6 +22,7 @@ export const GAMES = [
     minutes: 2,
     tint: "sky",
     icon: CircleDot,
+    level: "easy",
     playable: true,
   },
   {
@@ -30,6 +33,7 @@ export const GAMES = [
     minutes: 2,
     tint: "peach",
     icon: Rocket,
+    level: "easy",
     playable: true,
   },
   {
@@ -40,6 +44,7 @@ export const GAMES = [
     minutes: 3,
     tint: "mint",
     icon: Fish,
+    level: "hard",
     playable: true,
   },
 ];

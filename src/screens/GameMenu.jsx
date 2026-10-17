@@ -1,9 +1,9 @@
-import { Clock, Hand, Play } from "lucide-react";
+import { Clock, Flame, Hand, Play } from "lucide-react";
 import { GAMES } from "../data/games";
 import DevicePanel from "../components/DevicePanel";
 
 function GameCardBody({ game }) {
-  const { name, desc, trains, minutes, icon: Icon, playable } = game;
+  const { name, desc, trains, minutes, icon: Icon, playable, level } = game;
   return (
     <>
       <div className="game-art">
@@ -19,6 +19,11 @@ function GameCardBody({ game }) {
           <span className="chip">
             <Clock size={14} aria-hidden="true" /> {minutes} min
           </span>
+          {level === "hard" && (
+            <span className="chip chip--hard">
+              <Flame size={14} aria-hidden="true" /> Hard
+            </span>
+          )}
           {playable ? (
             <span className="play-badge">
               <Play size={13} fill="currentColor" aria-hidden="true" /> Play
@@ -31,6 +36,11 @@ function GameCardBody({ game }) {
     </>
   );
 }
+
+const SECTIONS = [
+  { level: "easy", title: "Easy", note: "a good place to start" },
+  { level: "hard", title: "Hard", note: "for a bigger challenge" },
+];
 
 export default function GameMenu({ sensor, demoMode, onDemoModeChange, transport, onTransportChange, onPlay }) {
   return (
@@ -49,23 +59,31 @@ export default function GameMenu({ sensor, demoMode, onDemoModeChange, transport
         onTransportChange={onTransportChange}
       />
 
-      <h2 className="section-title">
-        All games
-        <span className="section-note">{GAMES.length} games</span>
-      </h2>
-      <div className="games">
-        {GAMES.map((game) =>
-          game.playable ? (
-            <button key={game.id} className={`game-card tint-${game.tint}`} onClick={() => onPlay(game.id)}>
-              <GameCardBody game={game} />
-            </button>
-          ) : (
-            <article key={game.id} className={`game-card tint-${game.tint}`} aria-disabled="true">
-              <GameCardBody game={game} />
-            </article>
-          )
-        )}
-      </div>
+      {SECTIONS.map(({ level, title, note }) => {
+        const games = GAMES.filter((g) => (g.level ?? "easy") === level);
+        if (!games.length) return null;
+        return (
+          <section key={level} aria-label={title}>
+            <h2 className="section-title">
+              {title}
+              <span className="section-note">{note}</span>
+            </h2>
+            <div className="games">
+              {games.map((game) =>
+                game.playable ? (
+                  <button key={game.id} className={`game-card tint-${game.tint}`} onClick={() => onPlay(game.id)}>
+                    <GameCardBody game={game} />
+                  </button>
+                ) : (
+                  <article key={game.id} className={`game-card tint-${game.tint}`} aria-disabled="true">
+                    <GameCardBody game={game} />
+                  </article>
+                )
+              )}
+            </div>
+          </section>
+        );
+      })}
     </>
   );
 }

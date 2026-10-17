@@ -309,7 +309,7 @@ export default function Fishing({
     const world = createWorld(size.W, size.H);
     worldRef.current = world;
     const { L } = world;
-    const boatX = boatForTip(L.W * 0.55); // the boat stays put; the hook moves
+    const boatX = boatForTip(L.W / 2); // the boat stays put, rod tip over the middle; the hook moves
     const demo = { psi: 0, yaw: 0, pitch: 0, roll: 0 };
     const g = {
       stage: "fish", // fish | bite | reel | escape | caught
@@ -318,6 +318,8 @@ export default function Fishing({
       depth: OUT, // start with the hook out of the water
       hookX: null,
       lastFreeTravel: 0,
+      yawZero: 0,
+      wasOut: true,
       grace: 0,
       depthSpeed: 0,
       active: null,
@@ -445,15 +447,21 @@ export default function Fishing({
             ? L.depthY(g.depth)
             : L.depthY(0) + (rig.tip.y + 9 - L.depthY(0)) * (g.depth / OUT);
       const inWater = clamp((hookY - L.surfaceY) / 6, 0, 1);
+      // Each time the hook goes back in, it enters in the middle: side to
+      // side is measured from where the hand is at that moment (which also
+      // cancels any slow drift of the sensor's yaw).
+      const isOut = hookY <= L.surfaceY + 2;
+      if (g.wasOut && !isOut) g.yawZero = inp.yaw;
+      g.wasOut = isOut;
       if (free) {
         // Out of the water the hook hangs from the rod tip.
-        const aimX = 6 + ((clamp(inp.yaw, -1, 1) + 1) / 2) * (L.W - 12);
+        const aimX = L.W / 2 + clamp(inp.yaw - g.yawZero, -1, 1) * (L.W / 2 - 6);
         const targetX = rig.tip.x + (aimX - rig.tip.x) * inWater;
         g.hookX += (targetX - g.hookX) * Math.min(1, dt * 4);
       }
       const hook = { x: g.hookX, y: hookY };
       g.grace = Math.max(0, g.grace - dt);
-      const out = hookY <= L.surfaceY + 2;
+      const out = isOut;
 
       const settled = g.depthSpeed < SETTLED_SPEED;
       const bit = stepWorld(world, dt, hook, g.stage === "fish" && !out && g.grace <= 0 && settled);

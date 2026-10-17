@@ -3578,3 +3578,12 @@ button.game-card:hover {
   background: #6b4325;
   color: #fff3dc;
 }
+
+.chip.chip--hard {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+.chip.chip--hard svg {
+  color: var(--bad);
+}
