@@ -1,3 +1,5 @@
+import { correctMount } from "./orientation";
+
 // Must match xiao_sensor_firmware_ble.ino exactly -- these UUIDs and the
 // byte layout below are the contract between the firmware and the app.
 export const DEVICE_NAME = "AquaGrip";
@@ -7,14 +9,17 @@ export const STATUS_CHAR_UUID = "a495ff12-c5b1-4b44-b512-1370f02d74de";
 
 // The data characteristic is 5 little-endian float32s, in this order:
 // force_psi, qw, qx, qy, qz (20 bytes total -- see the firmware's header
-// comment for why that size was chosen).
+// comment for why that size was chosen). The quaternion is corrected for how
+// the IMU is mounted on the PCB (see orientation.js).
 export function decodeReading(dataView) {
   return {
     forcePsi: dataView.getFloat32(0, true),
-    qw: dataView.getFloat32(4, true),
-    qx: dataView.getFloat32(8, true),
-    qy: dataView.getFloat32(12, true),
-    qz: dataView.getFloat32(16, true),
+    ...correctMount({
+      qw: dataView.getFloat32(4, true),
+      qx: dataView.getFloat32(8, true),
+      qy: dataView.getFloat32(12, true),
+      qz: dataView.getFloat32(16, true),
+    }),
   };
 }
 
@@ -55,5 +60,5 @@ export function parseSerialLine(line) {
   const nums = parts.map(Number);
   if (!nums.every(Number.isFinite)) return null; // e.g. the header row
   const [forcePsi, qw, qx, qy, qz] = nums;
-  return { type: "data", reading: { forcePsi, qw, qx, qy, qz } };
+  return { type: "data", reading: { forcePsi, ...correctMount({ qw, qx, qy, qz }) } };
 }
