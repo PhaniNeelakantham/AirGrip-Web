@@ -17,7 +17,7 @@ function describe(gameId, r) {
         ? `The balloon didn't fill this time (${r.pumps} pumps)`
         : `${r.pumps} pumps · ${r.dodged} asteroids dodged`;
     case "fishing":
-      return `${r.caught} fish caught · best squeeze ${r.peak.toFixed(1)} psi · ${r.rangeDeg}° of wrist motion`;
+      return `${r.caught} fish caught · ${r.score} points · best squeeze ${r.peak.toFixed(1)} psi`;
     default:
       return "Done";
   }

@@ -35,7 +35,7 @@ export const GAMES = [
   {
     id: "fishing",
     name: "Fishing",
-    desc: "Aim, cast, hook and reel in five fish, one easy move at a time.",
+    desc: "Drop your hook into the deep, squeeze to hook rare fish, and reel them in. 20 fish to collect!",
     trains: "Grip + all wrist moves",
     minutes: 3,
     tint: "mint",

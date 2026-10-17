@@ -1,79 +1,43 @@
+import "@fontsource/pixelify-sans/600.css";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Fish as FishIcon, Hand, Move, Timer, Trophy, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Fish as FishIcon, Hand, Star, Timer, Trophy, X } from "lucide-react";
 import { addSession } from "../../data/sessionStore";
 import { getCalibration, getPlayCalibration } from "../../data/gripCalibration";
 import { getBaseline, wristTuning } from "../../data/baseline";
+import { getGuest, notSavedText, useGuest } from "../../data/guest";
+import { hasCaught, recordCatch, useFishdex } from "../../data/fishdex";
 import { REP_LOW, createRepCounter, toLevel } from "../squeezePop/logic";
-import {
-  AIM_HOLD_S,
-  AIM_TOLERANCE,
-  CAST_GOAL,
-  FISH,
-  HOOK_HOLD_S,
-  LIFT_GOAL,
-  createReel,
-  fishAim,
-  toReach,
-} from "./logic";
+import { createReel, toReach } from "./logic";
+import { FISH, TIERS } from "./fishTypes";
+import { VIEW_W, TIP_FROM_BOAT, boatForTip, createWorld, drawWorld, rigAt, splash, stepWorld } from "./engine";
+import { fishImageUrl } from "./sprites";
 import { useDevicePause } from "../useDevicePause";
-import { getGuest, notSavedText } from "../../data/guest";
 import ConnectionPause from "../ConnectionPause";
 import ResultActions, { StepTag } from "../ResultActions";
 import { createGripTracker, createTremorTracker } from "../metrics";
 import { angleDelta, toAngles } from "../../ble/orientation";
 
-// One catch, one movement at a time: wave to aim, tilt up then down to
-// cast, squeeze to hook, turn back and forth to reel in.
+// Side-view fishing. Wave side to side to move the boat, tilt your hand down
+// to drop the hook deeper (rarer fish live deeper), squeeze when a fish
+// bites (rarer = stronger, relative to your own max), then turn your wrist
+// back and forth to reel it in. Two-minute round; catch as many as you can.
 
-const CAST_S = 0.7; // bobber flight
-const CAUGHT_S = 1.8; // "You caught..." card
-const WAIT_MIN_S = 1.2; // time before a bite
-const WAIT_EXTRA_S = 1.4;
-const FINISH_DELAY = 0.2;
+const ROUND_S = 120;
+const BITE_WINDOW_S = 7; // squeeze within this long or the fish swims off
+const ESCAPE_S = 1.2;
+const LEAP_S = 0.6;
+const CATCH_S = 2.4; // leap + catch card; the clock pauses
+const DEPTH_DEADZONE = 0.06;
 const DEMO_MAX_PSI = 10;
 const DEMO_RISE = 6;
 const DEMO_FALL = 32;
-const DEMO_MOVE = 2.5; // pretend reach per second while an arrow is held (tilt, turn)
-
-// Scene geometry (SVG units). The rod pivots at the shore, bottom center.
-const VB_W = 360;
-const VB_H = 460;
-const PX = 180;
-const PY = 432;
-const ROD_LEN = 118;
-const FISH_DIST = 236;
-const AIM_DEG = 40; // reach 1 points the rod this far left/right
-const RING_R = 30;
-const RING_LEN = 2 * Math.PI * RING_R;
-const AIM_RING_LEN = 2 * Math.PI * (RING_R + 6);
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const polar = (deg, dist) => ({
-  x: PX + Math.sin((deg * Math.PI) / 180) * dist,
-  y: PY - Math.cos((deg * Math.PI) / 180) * dist,
-});
-
-// Where a new fish first appears, so it doesn't flash elsewhere for a frame.
-const fishStart = (aim) => {
-  const p = polar(aim * AIM_DEG, FISH_DIST);
-  return `translate(${p.x.toFixed(1)} ${(p.y + 14).toFixed(1)})`;
+const mmss = (s) => {
+  const total = Math.max(0, Math.ceil(s));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 };
-
-function FishShape({ color, size = 1, shadow = false }) {
-  return (
-    <g transform={`scale(${size})`}>
-      <path d="M16 0 L32 -11 L29 0 L32 11 Z" fill={shadow ? "var(--fish-shadow)" : color} />
-      <ellipse rx="22" ry="11" fill={shadow ? "var(--fish-shadow)" : color} />
-      {!shadow && (
-        <>
-          <path d="M-4 -10 Q4 -18 10 -9" fill={color} stroke="rgba(0,0,0,0.12)" strokeWidth="1" />
-          <circle cx="-12" cy="-3" r="2.6" fill="#1b2433" />
-          <circle cx="-12.8" cy="-3.8" r="0.9" fill="#fff" />
-        </>
-      )}
-    </g>
-  );
-}
+const tierOf = (sp) => TIERS[sp.tier];
 
 function DemoControls({ held, stage }) {
   const press = (key, down) => (e) => {
@@ -88,7 +52,7 @@ function DemoControls({ held, stage }) {
     onPointerCancel: press(key, false),
     onContextMenu: (e) => e.preventDefault(),
   });
-  if (stage === "hook" || stage === "wait") {
+  if (stage === "bite") {
     return (
       <div className="hold-wrap">
         <button className="hold-btn" {...handlers("squeeze")}>
@@ -98,65 +62,82 @@ function DemoControls({ held, stage }) {
       </div>
     );
   }
-  const vertical = stage === "lift" || stage === "cast";
-  const btn = (key, Icon, label) => (
-    <button className="pad-btn" aria-label={label} {...handlers(key)}>
-      <Icon size={26} strokeWidth={2.6} aria-hidden="true" />
+  const btn = (key, Icon, label, area) => (
+    <button className="pad-btn" style={{ gridArea: area }} aria-label={label} {...handlers(key)}>
+      <Icon size={24} strokeWidth={2.6} aria-hidden="true" />
     </button>
   );
+  if (stage === "reel") {
+    return (
+      <div className="fish-demo">
+        <div className="fish-pad">
+          {btn("left", ArrowLeft, "Turn left")}
+          {btn("right", ArrowRight, "Turn right")}
+        </div>
+        <p className="game-hint">Tap left and right in turn (or the arrow keys)</p>
+      </div>
+    );
+  }
   return (
     <div className="fish-demo">
-      <div className="fish-pad">
-        {vertical ? (
-          <>
-            {btn("up", ArrowUp, "Tilt up")}
-            {btn("down", ArrowDown, "Tilt down")}
-          </>
-        ) : (
-          <>
-            {btn("left", ArrowLeft, stage === "reel" ? "Turn left" : "Wave left")}
-            {btn("right", ArrowRight, stage === "reel" ? "Turn right" : "Wave right")}
-          </>
-        )}
+      <div className="pad fish-pad4">
+        {btn("up", ArrowUp, "Raise the hook", "up")}
+        {btn("left", ArrowLeft, "Move left", "left")}
+        {btn("right", ArrowRight, "Move right", "right")}
+        {btn("down", ArrowDown, "Lower the hook", "down")}
       </div>
-      <p className="game-hint">
-        {vertical ? "or the Up / Down keys" : stage === "reel" ? "Tap left and right in turn (or the arrow keys)" : "or the Left / Right keys"}
-      </p>
+      <p className="game-hint">Arrows move the boat and the hook</p>
     </div>
   );
 }
 
-function instructionFor(view) {
-  if (!view) return "";
-  switch (view.stage) {
-    case "aim":
-      return view.onTarget ? "That's it, hold it there…" : "Wave your hand to point the rod at the fish.";
-    case "lift":
-      return view.lifted ? "Now tilt your hand down to cast!" : "Tilt your hand up to lift the rod.";
-    case "cast":
-      return "Here it goes…";
-    case "wait":
-      return "Wait for a bite…";
-    case "hook":
-      return "A bite! Squeeze to hook it.";
-    case "reel":
-      return "Turn your wrist back and forth to reel it in.";
-    case "caught":
-      return `You caught a ${view.fish.name}!`;
-    default:
-      return "";
-  }
+function FishPic({ sp, size = 4, hidden = false }) {
+  const s = { width: (sp.len + 8) * size, maxWidth: "100%" };
+  return (
+    <img
+      src={fishImageUrl(sp)}
+      alt=""
+      className={`px-img${hidden ? " is-hidden" : ""}`}
+      style={s}
+      draggable="false"
+    />
+  );
 }
 
-const REAL_HINTS = {
-  aim: "Keep your forearm on the table and swing just your hand.",
-  lift: "Tilt gently. You don't need to go far.",
-  cast: "",
-  wait: "Relax your hand while you wait.",
-  hook: "Keep squeezing until the ring fills.",
-  reel: "Like turning a doorknob one way, then the other.",
-  caught: "",
-};
+function Collection({ dex, onClose }) {
+  const count = FISH.filter((f) => dex[f.id]).length;
+  return (
+    <div className="game-overlay fishdex-overlay">
+      <div className="overlay-card fishdex">
+        <div className="fishdex-head">
+          <h2 className="px-font">Fish collection</h2>
+          <button className="icon-btn" onClick={onClose} aria-label="Close collection">
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+        <p className="overlay-note">
+          {count} of {FISH.length} found. Rarer fish swim deeper.
+        </p>
+        {TIERS.map((tier, z) => (
+          <section key={tier.id} className="fishdex-zone">
+            <h3 className="px-font" style={{ color: tier.color }}>
+              {tier.zone} · {tier.label}
+            </h3>
+            <div className="fishdex-grid">
+              {FISH.filter((f) => f.tier === z).map((f) => (
+                <div key={f.id} className={`fishdex-cell${dex[f.id] ? "" : " is-unknown"}`}>
+                  <FishPic sp={f} size={3} hidden={!dex[f.id]} />
+                  <span>{dex[f.id] ? f.name : "???"}</span>
+                  {dex[f.id] > 0 && <small>×{dex[f.id]}</small>}
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Fishing({
   connectionState,
@@ -173,20 +154,77 @@ export default function Fishing({
   const [phase, setPhase] = useState("intro"); // intro | playing | done
   const [view, setView] = useState(null);
   const [result, setResult] = useState(null);
+  const [showDex, setShowDex] = useState(false);
   const link = useDevicePause({ active: phase === "playing", demoMode, connectionState, lastDataAtRef });
 
   const held = useRef(new Set());
   const center = useRef({ pitch: 0, roll: 0, yaw: 0 });
-  const el = useRef({}); // scene parts updated every frame
+  const areaRef = useRef(null);
+  const canvasRef = useRef(null);
+  const worldRef = useRef(null);
+  const [size, setSize] = useState(null); // { W, H } in art pixels
+  const gripFillRef = useRef(null);
+  const reelBarRef = useRef(null);
+
+  const guest = useGuest();
+  const keepsVisit = demoMode || guest;
+  const dex = useFishdex(keepsVisit);
+  const found = FISH.filter((f) => dex[f.id]).length;
 
   const connected = connectionState === "connected";
   const canStart = demoMode || connected;
   const baseline = getBaseline(demoMode);
   // Demo mode plays with default ranges; the baseline is optional there.
   const hasBaseline = demoMode || (baseline !== null && getCalibration(false) !== null);
-  const hasYaw = Number.isFinite(baseline?.yawRight);
 
-  // Demo controls: arrow keys / WASD move, Space squeezes.
+  // The canvas is VIEW_W art pixels wide and as tall as the screen allows;
+  // CSS scales it up with crisp pixels.
+  useEffect(() => {
+    const el = areaRef.current;
+    if (!el) return;
+    const measure = () => {
+      const { width, height } = el.getBoundingClientRect();
+      if (!width || !height) return;
+      const H = Math.round((VIEW_W * height) / width);
+      setSize((prev) => (prev && Math.abs(prev.H - H) < 2 ? prev : { W: VIEW_W, H }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!size) return;
+    const c = canvasRef.current;
+    c.width = size.W;
+    c.height = size.H;
+    worldRef.current = createWorld(size.W, size.H);
+  }, [size]);
+
+  // Behind the start and results cards, the lake just lives.
+  useEffect(() => {
+    if (phase === "playing" || !size) return;
+    let raf;
+    let last = performance.now();
+    const frame = (now) => {
+      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
+      last = now;
+      const world = worldRef.current;
+      const ctx = canvasRef.current?.getContext("2d");
+      if (world && ctx) {
+        stepWorld(world, dt, { x: -999, y: -999 }, false);
+        const boatX = boatForTip(world.L.W * 0.62);
+        const tip = rigAt(world, boatX).tip;
+        drawWorld(ctx, world, { boatX, hook: { x: tip.x, y: world.L.depthY(0.12) } });
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, size]);
+
+  // Demo controls: arrow keys / WASD, Space squeezes.
   useEffect(() => {
     const map = (e) =>
       e.code === "Space" ? "squeeze"
@@ -238,10 +276,23 @@ export default function Fishing({
           ...g.grip.result(),
           ...g.tremor.result(),
           timeToTargetS: ttt.length ? Number((ttt.reduce((a, v) => a + v, 0) / ttt.length).toFixed(2)) : null,
+          fishCaught: g.caught.length,
+          fishScore: g.score,
+          deepestZone: g.caught.length ? Math.max(...g.caught.map((sp) => sp.tier)) : null,
           ...(sessionGroupId && { groupId: sessionGroupId }),
         });
       }
-      setResult({ caught: g.caught, timeS: Math.round(g.elapsed), peak, rangeDeg, saved: !demoMode && !getGuest() });
+      const best = g.caught.reduce((b, sp) => (!b || sp.tier > b.tier ? sp : b), null);
+      setResult({
+        caught: g.caught.length,
+        score: g.score,
+        best,
+        newCount: g.newIds.size,
+        timeS: Math.round(g.elapsed),
+        peak,
+        rangeDeg,
+        saved: !demoMode && !getGuest(),
+      });
       setPhase("done");
     },
     [demoMode, sessionGroupId]
@@ -249,26 +300,36 @@ export default function Fishing({
 
   // Main game loop.
   useEffect(() => {
-    if (phase !== "playing") return;
+    if (phase !== "playing" || !size) return;
     const cal = getPlayCalibration(demoMode);
     const tune = wristTuning(getBaseline(demoMode));
+    const persist = !demoMode && !getGuest();
+    const world = createWorld(size.W, size.H);
+    worldRef.current = world;
+    const { L } = world;
+    const tipMin = TIP_FROM_BOAT + 2;
+    const tipMax = L.W - 6;
     const demo = { psi: 0, yaw: 0, pitch: 0, roll: 0 };
     const g = {
-      index: 0,
-      stage: "aim",
+      stage: "fish", // fish | bite | reel | escape | caught
       t: 0,
-      fish: FISH[0],
-      aim: fishAim(0),
-      aimHold: 0,
-      lifted: false,
-      wait: 0,
+      timeLeft: ROUND_S,
+      boatX: boatForTip((tipMin + tipMax) / 2),
+      depth: 0,
+      active: null,
+      biteT: 0,
       hookHold: 0,
       hookReached: false,
+      warn: false,
       reel: createReel(),
-      reelStart: 0,
+      lastTravel: 0,
       progress: 0,
-      caught: 0,
-      finishing: null,
+      reelFromY: 0,
+      flying: null,
+      lastCatch: null,
+      caught: [],
+      newIds: new Set(),
+      score: 0,
       elapsed: 0,
       peak: 0,
       squeezeSum: 0,
@@ -279,28 +340,28 @@ export default function Fishing({
       lastSample: null,
       lastSampleAt: 0,
       timesToTarget: [],
-      range: {
-        pitch: { min: 0, max: 0 },
-        roll: { min: 0, max: 0 },
-        yaw: { min: 0, max: 0 },
-      },
+      range: { pitch: { min: 0, max: 0 }, roll: { min: 0, max: 0 }, yaw: { min: 0, max: 0 } },
     };
     let raf;
     let last = performance.now();
     let lastSignature = null;
+    const ctx = canvasRef.current.getContext("2d");
+    if (import.meta.env.DEV) window.__fishing = { g, world }; // for testing in the browser
 
-    const ease = (v, target, dt) => v + clamp(target - v, -DEMO_MOVE * dt, DEMO_MOVE * dt);
     const readInputs = (dt) => {
       if (demoMode) {
         const h = held.current;
         const side = (h.has("right") ? 1 : 0) - (h.has("left") ? 1 : 0);
+        const vert = (h.has("up") ? 1 : 0) - (h.has("down") ? 1 : 0);
         demo.psi = h.has("squeeze")
           ? Math.min(DEMO_MAX_PSI, demo.psi + DEMO_RISE * dt)
           : Math.max(0, demo.psi - DEMO_FALL * dt);
-        // Left/right waves while aiming and turns while reeling.
-        if (g.stage === "aim") demo.yaw = clamp(demo.yaw + side * 1.2 * dt, -1.15, 1.15);
-        demo.roll = ease(demo.roll, g.stage === "reel" ? side * 0.8 : 0, dt);
-        demo.pitch = ease(demo.pitch, (h.has("up") ? 1 : 0) - (h.has("down") ? 1 : 0), dt);
+        if (g.stage === "fish" || g.stage === "escape") {
+          demo.yaw = clamp(demo.yaw + side * 1.1 * dt, -1, 1);
+          demo.pitch = clamp(demo.pitch + vert * 0.7 * dt, -1, 0.2);
+        }
+        const rollTarget = g.stage === "reel" ? side * 0.8 : 0;
+        demo.roll += clamp(rollTarget - demo.roll, -2.5 * dt, 2.5 * dt);
         return { psi: demo.psi, yaw: demo.yaw, pitch: demo.pitch, roll: demo.roll };
       }
       const a = toAngles(reading.current);
@@ -331,56 +392,6 @@ export default function Fishing({
       };
     };
 
-    const nextFish = () => {
-      g.index++;
-      g.fish = FISH[g.index];
-      g.aim = fishAim(g.index);
-      g.aimHold = 0;
-      g.lifted = false;
-      g.hookHold = 0;
-      g.hookReached = false;
-      g.progress = 0;
-      g.stage = "aim";
-      g.t = 0;
-    };
-
-    const draw = (inp, level) => {
-      const e = el.current;
-      const aimAngle = g.stage === "aim" ? clamp(inp.yaw, -1.15, 1.15) * AIM_DEG : g.aim * AIM_DEG;
-      const tip = polar(aimAngle, ROD_LEN);
-      const spot = polar(g.aim * AIM_DEG, FISH_DIST);
-      e.rod?.setAttribute("transform", `rotate(${aimAngle.toFixed(2)} ${PX} ${PY})`);
-
-      // Bobber: flies out while casting, sits by the fish, comes in while reeling.
-      let bob = spot;
-      if (g.stage === "cast") {
-        const u = Math.min(1, g.t / CAST_S);
-        bob = { x: tip.x + (spot.x - tip.x) * u, y: tip.y + (spot.y - tip.y) * u - Math.sin(Math.PI * u) * 46 };
-      } else if (g.stage === "reel" || g.stage === "caught") {
-        bob = polar(g.aim * AIM_DEG, FISH_DIST - (FISH_DIST - ROD_LEN - 20) * Math.min(1, g.progress));
-      }
-      e.bobber?.setAttribute("transform", `translate(${bob.x.toFixed(1)} ${bob.y.toFixed(1)})`);
-      if (e.line) {
-        e.line.setAttribute("x1", tip.x.toFixed(1));
-        e.line.setAttribute("y1", tip.y.toFixed(1));
-        e.line.setAttribute("x2", bob.x.toFixed(1));
-        e.line.setAttribute("y2", bob.y.toFixed(1));
-      }
-      const fishAt = g.stage === "reel" ? bob : spot;
-      e.fish?.setAttribute("transform", `translate(${fishAt.x.toFixed(1)} ${(fishAt.y + 14).toFixed(1)})`);
-      e.aimRing?.setAttribute("stroke-dashoffset", (AIM_RING_LEN * (1 - g.aimHold / AIM_HOLD_S)).toFixed(1));
-      e.hookRing?.setAttribute("stroke-dashoffset", (RING_LEN * (1 - g.hookHold / HOOK_HOLD_S)).toFixed(1));
-
-      if (e.tiltFill) {
-        const p = clamp(inp.pitch, -1, 1) * 50;
-        e.tiltFill.style.bottom = p >= 0 ? "50%" : `${50 + p}%`;
-        e.tiltFill.style.height = `${Math.abs(p)}%`;
-      }
-      if (e.gripFill) e.gripFill.style.height = `${Math.min(1, level) * 100}%`;
-      if (e.reelBar) e.reelBar.style.width = `${Math.min(1, g.progress) * 100}%`;
-      e.reelSpin?.setAttribute("transform", `rotate(${(g.progress * 900).toFixed(1)} ${PX + 34} ${PY - 6})`);
-    };
-
     const step = (now) => {
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
       last = now;
@@ -390,7 +401,6 @@ export default function Fishing({
       }
       g.elapsed += dt;
       g.t += dt;
-
       const inp = readInputs(dt);
       const level = toLevel(inp.psi, cal);
       const above = Math.max(0, inp.psi - cal.restPsi);
@@ -401,88 +411,132 @@ export default function Fishing({
       }
       g.reps.update(level);
       g.grip.update(level, dt);
+      const travel = g.reel.update(inp.roll, dt);
 
-      let onTarget = false;
-      if (g.finishing !== null) {
-        g.finishing -= dt;
-        if (g.finishing <= 0) {
-          finish(g);
-          return;
-        }
-      } else if (g.stage === "aim") {
-        onTarget = Math.abs(inp.yaw - g.aim) < AIM_TOLERANCE;
-        g.aimHold = onTarget ? g.aimHold + dt : Math.max(0, g.aimHold - dt * 0.6);
-        if (g.aimHold >= AIM_HOLD_S) {
-          g.stage = "lift";
-          g.t = 0;
-        }
-      } else if (g.stage === "lift") {
-        if (!g.lifted && inp.pitch >= LIFT_GOAL) g.lifted = true;
-        if (g.lifted && inp.pitch <= CAST_GOAL) {
-          g.stage = "cast";
-          g.t = 0;
-        }
-      } else if (g.stage === "cast") {
-        if (g.t >= CAST_S) {
-          g.stage = "wait";
-          g.t = 0;
-          g.wait = WAIT_MIN_S + Math.random() * WAIT_EXTRA_S;
-        }
-      } else if (g.stage === "wait") {
-        if (g.t >= g.wait) {
-          g.stage = "hook";
-          g.t = 0;
-        }
-      } else if (g.stage === "hook") {
-        const strong = level >= g.fish.grip;
+      // Steering: wave moves the boat, tilting down lowers the hook.
+      const free = g.stage === "fish" || g.stage === "escape";
+      if (free) {
+        const tip = tipMin + ((clamp(inp.yaw, -1, 1) + 1) / 2) * (tipMax - tipMin);
+        g.boatX += (boatForTip(tip) - g.boatX) * Math.min(1, dt * 5);
+        const target = clamp((-inp.pitch - DEPTH_DEADZONE) / (1 - DEPTH_DEADZONE), 0, 1);
+        g.depth += (target - g.depth) * Math.min(1, dt * 3);
+      }
+      const rig = rigAt(world, g.boatX);
+      // While reeling, the hook (and the fish on it) rises to the surface.
+      const hook = {
+        x: rig.tip.x,
+        y: g.stage === "reel" ? g.reelFromY + (L.surfaceY + 2 - g.reelFromY) * Math.min(1, g.progress) : L.depthY(g.depth),
+      };
+
+      const bit = stepWorld(world, dt, hook, g.stage === "fish");
+
+      if (g.stage === "fish" && bit) {
+        bit.state = "hooked";
+        world.curious = null;
+        g.active = bit;
+        g.stage = "bite";
+        g.biteT = 0;
+        g.hookHold = 0;
+        g.hookReached = false;
+        // The hook stays where the fish took it.
+        g.depth = L.depthOfY(bit.y);
+      } else if (g.stage === "bite") {
+        const tier = tierOf(g.active.sp);
+        g.biteT += dt;
+        const strong = level >= tier.grip;
         if (strong && !g.hookReached) {
           g.hookReached = true;
-          g.timesToTarget.push(g.t);
+          g.timesToTarget.push(g.biteT);
         }
-        g.hookHold = strong ? g.hookHold + dt : Math.max(0, g.hookHold - dt * 0.6);
-        if (g.hookHold >= HOOK_HOLD_S) {
+        g.warn = !strong && level > 0.08;
+        g.hookHold = strong ? g.hookHold + dt : Math.max(0, g.hookHold - dt * 0.5);
+        if (g.hookHold >= tier.hold) {
           g.stage = "reel";
+          g.progress = 0;
+          g.lastTravel = travel;
+          g.reelFromY = L.depthY(g.depth);
+          splash(world, hook.x, false);
+        } else if (g.biteT >= BITE_WINDOW_S) {
+          const f = g.active;
+          f.state = "flee";
+          f.dir = -f.dir;
+          g.active = null;
+          g.stage = "escape";
           g.t = 0;
-          g.reelStart = g.reel.update(inp.roll, dt);
         }
       } else if (g.stage === "reel") {
-        g.progress = (g.reel.update(inp.roll, dt) - g.reelStart) / g.fish.reel;
+        const tier = tierOf(g.active.sp);
+        g.progress += (travel - g.lastTravel) / tier.reel;
+        g.lastTravel = travel;
+        g.progress = Math.max(0, g.progress - dt * 0.04 * g.active.sp.tier); // big fish pull back a little
+        if (Math.random() < dt * 4) world.bubbles.push({ x: hook.x, y: hook.y - 2, seed: Math.random() * 6 });
         if (g.progress >= 1) {
-          g.progress = 1;
-          g.caught++;
+          const sp = g.active.sp;
+          const isNew = !hasCaught(sp.id, !persist);
+          recordCatch(sp.id, persist);
+          if (isNew) g.newIds.add(sp.id);
+          g.caught.push(sp);
+          g.score += tier.points;
+          world.fishes = world.fishes.filter((f) => f !== g.active);
+          g.flying = { f: g.active, u: 0, from: { x: hook.x, y: L.surfaceY } };
+          g.lastCatch = { sp, points: tier.points, isNew, n: g.caught.length };
+          g.active = null;
           g.stage = "caught";
           g.t = 0;
+          g.depth = 0;
+          splash(world, hook.x, true);
         }
+      } else if (g.stage === "escape") {
+        if (g.t >= ESCAPE_S) g.stage = "fish";
       } else if (g.stage === "caught") {
-        if (g.t >= CAUGHT_S) {
-          if (g.index + 1 >= FISH.length) g.finishing = FINISH_DELAY;
-          else nextFish();
+        if (g.flying) {
+          g.flying.u = Math.min(1, g.t / LEAP_S);
+          if (g.flying.u >= 1) g.flying = null;
         }
+        if (g.t >= CATCH_S) g.stage = "fish";
       }
-      if (g.stage !== "reel") g.reel.update(inp.roll, dt); // keep the smoothing warm
 
-      draw(inp, level);
+      // The clock runs except while a catch is celebrated. When it runs out,
+      // a fish already on the line can still be landed.
+      if (g.stage !== "caught") g.timeLeft = Math.max(0, g.timeLeft - dt);
+      if (g.timeLeft <= 0 && (g.stage === "fish" || g.stage === "escape")) {
+        finish(g);
+        return;
+      }
 
-      // Only discrete changes re-render through React.
-      const signature = [g.index, g.stage, g.lifted, onTarget, g.caught].join("|");
+      const tier = g.active ? tierOf(g.active.sp) : null;
+      drawWorld(ctx, world, {
+        boatX: g.boatX,
+        hook: g.stage === "caught" ? null : hook,
+        active: g.active,
+        ring: g.stage === "bite" ? { progress: g.hookHold / tier.hold, color: tier.color, warn: g.warn } : null,
+        flying: g.flying,
+      });
+
+      if (gripFillRef.current) gripFillRef.current.style.height = `${Math.min(1, level) * 100}%`;
+      if (reelBarRef.current) reelBarRef.current.style.width = `${Math.min(1, g.progress) * 100}%`;
+
+      const zone = L.zoneOfY(L.depthY(g.depth));
+      const signature = [g.stage, g.score, Math.ceil(g.timeLeft), zone, g.warn, g.caught.length, tier?.id].join("|");
       if (signature !== lastSignature) {
         lastSignature = signature;
         setView({
-          index: g.index,
           stage: g.stage,
-          lifted: g.lifted,
-          onTarget,
-          fish: g.fish,
-          aim: g.aim,
-          caught: g.caught,
-          goal: g.fish.grip,
+          score: g.score,
+          timeLeft: g.timeLeft,
+          zone,
+          tier,
+          warn: g.warn,
+          lastCatch: g.lastCatch,
+          caught: g.caught.length,
+          lastCall: g.timeLeft <= 0,
         });
       }
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [phase, demoMode, reading, lastDataAtRef, finish, link.pausedRef]);
+  }, [phase, size, demoMode, reading, lastDataAtRef, finish, link.pausedRef]);
 
   const recenter = () => {
     if (!demoMode) center.current = toAngles(reading.current);
@@ -493,6 +547,7 @@ export default function Fishing({
     held.current.clear();
     recenter();
     link.resume();
+    setShowDex(false);
     setResult(null);
     setView(null);
     setPhase("playing");
@@ -500,14 +555,22 @@ export default function Fishing({
 
   const playing = phase === "playing" && view !== null;
   const stage = view?.stage;
-  const instruction = playing ? instructionFor(view) : "";
-  const showLine = playing && ["cast", "wait", "hook", "reel"].includes(stage);
-  const showFish = playing && stage !== "caught";
-  const fishVisible = stage === "reel"; // hooked: shown in color
-
-  const setEl = (name) => (node) => {
-    el.current[name] = node;
-  };
+  const zoneTier = view ? TIERS[view.zone] : TIERS[0];
+  const tip = !playing
+    ? ""
+    : stage === "bite"
+      ? view.warn
+        ? "Squeeze harder!"
+        : "A bite! Squeeze and hold!"
+      : stage === "reel"
+        ? "Turn your wrist back and forth to reel!"
+        : stage === "escape"
+          ? "It got away! Try again."
+          : stage === "caught"
+            ? ""
+            : view.zone === 0
+              ? "Tilt your hand down to drop the hook deeper."
+              : "Wait near a fish… wave to move the boat.";
 
   return (
     <>
@@ -519,166 +582,76 @@ export default function Fishing({
           Fishing
           <StepTag sessionStep={sessionStep} />
         </div>
-        <div className="game-timer" aria-label="Fish caught">
-          <FishIcon size={16} aria-hidden="true" />
-          {phase === "done" ? result?.caught : (view?.caught ?? 0)} / {FISH.length}
+        <div className="game-timer" aria-label="Time left">
+          <Timer size={16} aria-hidden="true" />
+          {phase === "playing" && view ? mmss(view.timeLeft) : mmss(ROUND_S)}
         </div>
       </div>
       <p className="sr-only" aria-live="polite">
-        {instruction}
+        {view?.lastCatch && stage === "caught" ? `You caught a ${view.lastCatch.sp.name}!` : tip}
       </p>
 
-      <div className="fish-area">
-        <div className="fish-shore" aria-hidden="true" />
-        <svg className="fish-scene" viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMax meet" aria-hidden="true">
-          <g className="fish-ripples">
-            <ellipse cx="70" cy="120" rx="26" ry="6" />
-            <ellipse cx="290" cy="80" rx="18" ry="4" />
-            <ellipse cx="250" cy="250" rx="30" ry="7" />
-            <ellipse cx="95" cy="300" rx="20" ry="5" />
-          </g>
-
-          {showFish && (
-            <g ref={setEl("fish")} transform={fishStart(view.aim)}>
-              <g className={fishVisible ? "fish-hooked" : "fish-swim"}>
-                <FishShape color={view.fish.color} size={view.fish.size} shadow={!fishVisible} />
-              </g>
-              {stage === "aim" && <circle r={RING_R + 6} className="fish-ring-track" />}
-              {stage === "aim" && (
-                // Fills while the rod points at the fish.
-                <circle
-                  ref={setEl("aimRing")}
-                  r={RING_R + 6}
-                  className={`fish-ring${view.onTarget ? " is-on" : ""}`}
-                  strokeDasharray={AIM_RING_LEN}
-                  strokeDashoffset={AIM_RING_LEN}
-                  transform="rotate(-90)"
-                />
-              )}
-            </g>
-          )}
-
-          {showLine && <line ref={setEl("line")} className="fish-line" />}
-          {showLine && (
-            <g ref={setEl("bobber")}>
-              <g className={stage === "hook" ? "bobber is-bite" : stage === "wait" ? "bobber is-floating" : "bobber"}>
-                <circle r="8" className="bobber-bottom" />
-                <path d="M-8 0 A8 8 0 0 1 8 0 Z" className="bobber-top" />
-              </g>
-              {stage === "hook" && <circle r={RING_R} className="fish-ring-track" />}
-              {stage === "hook" && (
-                <circle
-                  ref={setEl("hookRing")}
-                  r={RING_R}
-                  className="fish-ring"
-                  strokeDasharray={RING_LEN}
-                  strokeDashoffset={RING_LEN}
-                  transform="rotate(-90)"
-                />
-              )}
-            </g>
-          )}
-
-          {playing && (
-            <g ref={setEl("rod")}>
-              <line x1={PX} y1={PY} x2={PX} y2={PY - ROD_LEN} className="fish-rod" />
-              <circle cx={PX} cy={PY - ROD_LEN} r="3.5" className="fish-rod-tip" />
-            </g>
-          )}
-          <circle cx={PX} cy={PY} r="9" className="fish-handle" />
-          {playing && stage === "reel" && (
-            <g className="fish-reel">
-              <circle cx={PX + 34} cy={PY - 6} r="15" />
-              <g ref={setEl("reelSpin")}>
-                <line x1={PX + 34} y1={PY - 6} x2={PX + 34} y2={PY - 21} />
-                <circle cx={PX + 34} cy={PY - 21} r="4" />
-              </g>
-            </g>
-          )}
-        </svg>
+      <div className="fish2-area" ref={areaRef}>
+        <canvas ref={canvasRef} className="fish2-canvas" aria-hidden="true" />
 
         {playing && (
-          <div className={`fish-tip${stage === "hook" ? " is-alert" : ""}`} aria-hidden="true">
-            {instruction}
-          </div>
-        )}
+          <>
+            <div className="fish-hud px-font" aria-hidden="true">
+              <span className="fish-chip">
+                <Star size={14} aria-hidden="true" /> {view.score}
+              </span>
+              <span className="fish-chip">
+                <span className="fish-zone-dot" style={{ background: zoneTier.color }} />
+                {zoneTier.zone}
+                <em style={{ color: zoneTier.color }}>{zoneTier.label}</em>
+              </span>
+            </div>
 
-        {playing && stage === "lift" && (
-          <div className="tilt-meter" aria-hidden="true">
-            <span className="tilt-meter-mid" />
-            <span ref={setEl("tiltFill")} className="tilt-meter-fill" />
-            <span className={`tilt-meter-goal${view.lifted ? "" : " is-next"}`} style={{ bottom: `${50 + LIFT_GOAL * 50}%` }} />
-            <span className={`tilt-meter-goal${view.lifted ? " is-next" : ""}`} style={{ bottom: `${50 + CAST_GOAL * 50}%` }} />
-            <ArrowUp size={14} className="tilt-meter-label tilt-meter-label--up" />
-            <ArrowDown size={14} className="tilt-meter-label tilt-meter-label--down" />
-          </div>
-        )}
-
-        {playing && (stage === "hook" || stage === "wait") && (
-          <div className="squeeze-meter" aria-hidden="true">
-            <div ref={setEl("gripFill")} className="squeeze-fill" style={{ height: 0 }} />
-            <div className="squeeze-goal" style={{ bottom: `${view.goal * 100}%` }} />
-          </div>
-        )}
-
-        {playing && stage === "reel" && (
-          <div className="reel-progress" aria-hidden="true">
-            <span ref={setEl("reelBar")} />
-          </div>
-        )}
-
-        {playing && stage === "caught" && (
-          <div className="catch-card" role="status">
-            <svg viewBox="-40 -24 80 48" width="120" height="72" aria-hidden="true">
-              <FishShape color={view.fish.color} />
-            </svg>
-            <strong>{view.fish.name}!</strong>
-            <span>
-              {view.caught} of {FISH.length} in the bucket
-            </span>
-          </div>
-        )}
-
-        {phase === "intro" && (
-          <div className="game-overlay">
-            <div className="overlay-card">
-              <div className="overlay-icon tint-mint">
-                <FishIcon size={30} aria-hidden="true" />
+            {stage === "bite" && (
+              <div className="squeeze-meter fish2-meter" aria-hidden="true">
+                <div ref={gripFillRef} className="squeeze-fill" style={{ height: 0 }} />
+                <div className="squeeze-goal" style={{ bottom: `${view.tier.grip * 100}%`, background: view.tier.color }} />
               </div>
-              <h2>Go fishing</h2>
+            )}
+
+            {stage === "reel" && (
+              <div className="reel-progress fish2-reel" aria-hidden="true">
+                <span ref={reelBarRef} />
+              </div>
+            )}
+
+            {stage === "caught" && view.lastCatch && (
+              <div className="catch2-card" role="status" style={{ "--tier": tierOf(view.lastCatch.sp).color }}>
+                {view.lastCatch.isNew && <span className="catch2-new px-font">NEW!</span>}
+                <FishPic sp={view.lastCatch.sp} size={5} />
+                <strong className="px-font">{view.lastCatch.sp.name}</strong>
+                <span className="catch2-tier px-font">{tierOf(view.lastCatch.sp).label}</span>
+                <span className="catch2-points px-font">+{view.lastCatch.points}</span>
+              </div>
+            )}
+          </>
+        )}
+
+        {phase === "intro" && !showDex && (
+          <div className="game-overlay">
+            <div className="overlay-card fish2-card">
+              <h2 className="px-font fish2-title">Deep Sea Fishing</h2>
               <ol className="steps">
-                <li>Wave your hand left or right to point the rod at the fish.</li>
-                <li>Tilt your hand up to lift the rod, then down to cast.</li>
-                <li>When the bobber dips, squeeze to hook the fish.</li>
+                <li>Wave your hand left or right to move the boat.</li>
+                <li>Tilt your hand down to drop the hook. Rarer fish swim deeper.</li>
+                <li>When a fish bites, squeeze! Rarer fish need a stronger squeeze.</li>
                 <li>Turn your wrist back and forth to reel it in.</li>
               </ol>
-              {!demoMode && hasBaseline && (
-                <p className="overlay-note">
-                  <Move size={14} aria-hidden="true" /> Rest your forearm on the table with your hand level, then tap Start.
-                </p>
-              )}
+              <button className="fish-dex-btn" onClick={() => setShowDex(true)}>
+                <BookOpen size={16} aria-hidden="true" /> Collection {found}/{FISH.length}
+              </button>
               {!hasBaseline && (
-                <p className="overlay-note">
-                  First, take the 1-minute baseline assessment so every move matches your range.
-                </p>
+                <p className="overlay-note">First, take the 1-minute baseline assessment so every move matches your range.</p>
               )}
-              {demoMode && !baseline && (
-                <p className="overlay-note">
-                  Optional:{" "}
-                  <button className="link-btn link-btn--inline" onClick={onOpenBaseline}>
-                    try the baseline assessment
-                  </button>{" "}
-                  to tune every move to your range. Not needed in Demo mode.
-                </p>
+              {hasBaseline && !demoMode && (
+                <p className="overlay-note">Rest your forearm on the table, hand level, then tap Start. 2-minute round.</p>
               )}
-              {baseline && !hasYaw && (
-                <p className="overlay-note">
-                  Tip: redo the baseline on Home to tune the side-to-side aim to your wrist.
-                </p>
-              )}
-              {demoMode && (
-                <p className="overlay-note">Demo mode: use the arrow keys and Space (or the buttons). Not saved to your progress.</p>
-              )}
+              {demoMode && <p className="overlay-note">Demo mode: arrow keys move, Space squeezes. Not saved to your progress.</p>}
               {hasBaseline && !canStart && (
                 <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
               )}
@@ -703,6 +676,8 @@ export default function Fishing({
           </div>
         )}
 
+        {showDex && <Collection dex={dex} onClose={() => setShowDex(false)} />}
+
         {phase === "playing" && link.paused && (
           <ConnectionPause
             lost={link.lost}
@@ -717,37 +692,41 @@ export default function Fishing({
           />
         )}
 
-        {phase === "done" && result && (
+        {phase === "done" && result && !showDex && (
           <div className="game-overlay">
-            <div className="overlay-card">
-              <div className="overlay-icon tint-mint">
-                <FishIcon size={30} aria-hidden="true" />
-              </div>
-              <h2>A full bucket!</h2>
+            <div className="overlay-card fish2-card">
+              <h2 className="px-font fish2-title">Time's up!</h2>
               <div className="result-stats result-stats--3">
                 <div>
                   <FishIcon size={18} aria-hidden="true" />
-                  <strong>
-                    {result.caught}/{FISH.length}
-                  </strong>
-                  <span>caught</span>
+                  <strong>{result.caught}</strong>
+                  <span>fish</span>
+                </div>
+                <div>
+                  <Star size={18} aria-hidden="true" />
+                  <strong>{result.score}</strong>
+                  <span>points</span>
                 </div>
                 <div>
                   <Trophy size={18} aria-hidden="true" />
                   <strong>{result.peak.toFixed(1)}</strong>
                   <span>best psi</span>
                 </div>
-                <div>
-                  <Timer size={18} aria-hidden="true" />
-                  <strong>
-                    {Math.floor(result.timeS / 60)}:{String(result.timeS % 60).padStart(2, "0")}
-                  </strong>
-                  <span>time</span>
-                </div>
               </div>
-              <p className="overlay-note">
-                {result.saved ? "Saved to your progress." : notSavedText(demoMode)}
-              </p>
+              {result.best && (
+                <div className="fish2-best" style={{ "--tier": tierOf(result.best).color }}>
+                  <FishPic sp={result.best} size={3} />
+                  <span>
+                    Best catch: <strong>{result.best.name}</strong>{" "}
+                    <em className="px-font">{tierOf(result.best).label}</em>
+                  </span>
+                </div>
+              )}
+              <button className="fish-dex-btn" onClick={() => setShowDex(true)}>
+                <BookOpen size={16} aria-hidden="true" /> Collection {found}/{FISH.length}
+                {result.newCount > 0 && <span className="fish-dex-new">+{result.newCount} new</span>}
+              </button>
+              <p className="overlay-note">{result.saved ? "Saved to your progress." : notSavedText(demoMode)}</p>
               <ResultActions
                 sessionStep={sessionStep}
                 onNext={() => onNext?.(result)}
@@ -759,19 +738,14 @@ export default function Fishing({
         )}
       </div>
 
-      {playing &&
-        stage !== "caught" &&
-        stage !== "cast" &&
-        (demoMode ? (
-          <DemoControls held={held} stage={stage} />
-        ) : (
-          REAL_HINTS[stage] && (
-            <p className="game-hint" style={{ marginTop: 16, textAlign: "center" }}>
-              {REAL_HINTS[stage]}
-            </p>
-          )
-        ))}
+      {playing && (
+        <div className={`fish2-tip px-font${stage === "bite" ? " is-alert" : ""}`} aria-hidden="true">
+          {stage === "caught" && view.lastCatch
+            ? `You caught a ${view.lastCatch.sp.name}!`
+            : `${view.lastCall && stage !== "fish" ? "Last fish! " : ""}${tip}`}
+        </div>
+      )}
+      {playing && stage !== "caught" && demoMode && <DemoControls held={held} stage={stage} />}
     </>
   );
 }
-

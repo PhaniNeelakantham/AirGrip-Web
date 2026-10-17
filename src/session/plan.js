@@ -5,7 +5,7 @@ export const TODAY_PLAN = [
   { gameId: "squeeze-pop", purpose: "Warm up your grip" },
   { gameId: "tilt-maze", purpose: "Loosen up your wrist" },
   { gameId: "balloon-rescue", purpose: "Put grip and wrist together" },
-  { gameId: "fishing", purpose: "Every move, one at a time" },
+  { gameId: "fishing", purpose: "Grip and every wrist move together" },
 ].map((step) => ({ ...step, game: GAMES.find((g) => g.id === step.gameId) }));
 
 export const PLAN_MINUTES = TODAY_PLAN.reduce((sum, s) => sum + (s.game?.minutes ?? 2), 0);
