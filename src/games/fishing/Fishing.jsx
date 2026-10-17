@@ -679,7 +679,7 @@ export default function Fishing({
               {demoMode && (
                 <p className="overlay-note">Demo mode: use the arrow keys and Space (or the buttons). Not saved to your progress.</p>
               )}
-              {!canStart && (
+              {hasBaseline && !canStart && (
                 <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
               )}
               {!hasBaseline ? (

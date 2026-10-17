@@ -1224,8 +1224,11 @@ p {
 .game-overlay {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  /* Scrolls when the card is taller than the game area (small screens),
+     instead of hiding the bottom of it. */
+  display: flex;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px;
   border-radius: 18px;
   background: color-mix(in srgb, var(--bg) 55%, transparent);
@@ -1236,6 +1239,7 @@ p {
 .overlay-card {
   width: 100%;
   max-width: 340px;
+  margin: auto; /* centered, but never cut off at the top */
   padding: 22px;
   border-radius: 24px;
   background: var(--surface);
@@ -2739,7 +2743,7 @@ button.game-card:hover {
 .fish-area {
   position: relative;
   overflow: hidden;
-  height: min(480px, 60svh);
+  height: min(560px, 68svh);
   border-radius: 24px;
   background: linear-gradient(180deg, var(--water-top) 0%, var(--water-bottom) 100%);
   border: 1px solid var(--border);

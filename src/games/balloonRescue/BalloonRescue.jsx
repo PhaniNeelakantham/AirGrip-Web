@@ -142,6 +142,7 @@ export default function BalloonRescue({
     demoMode,
     onExit,
     onReconnect,
+    onOpenBaseline,
     sessionStep = null,
     sessionGroupId = null,
     onNext,
@@ -164,6 +165,8 @@ export default function BalloonRescue({
 
     const connected = connectionState === "connected";
     const canStart = demoMode || connected;
+    // The pump strength comes from the Baseline assessment (optional in Demo mode).
+    const hasCalibration = demoMode || getCalibration(false) !== null;
 
     // Keep the canvas matched to its container.
     useEffect(() => {
@@ -544,13 +547,19 @@ export default function BalloonRescue({
                                 </li>
                             </ol>
                             {demoMode && <p className="overlay-note">Demo mode: this game won't be saved to your progress.</p>}
-                            {!demoMode && !getCalibration(false) && canStart && (
-                                <p className="overlay-note">Tip: take the baseline assessment on Home first for the best pump feel.</p>
+                            {!hasCalibration && (
+                                <p className="overlay-note">
+                                    First, take the 1-minute baseline assessment so pumping matches your grip.
+                                </p>
                             )}
-                            {!canStart && (
+                            {hasCalibration && !canStart && (
                                 <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
                             )}
-                            {canStart ? (
+                            {!hasCalibration ? (
+                                <button className="btn btn-primary btn-block" onClick={onOpenBaseline}>
+                                    Start baseline assessment
+                                </button>
+                            ) : canStart ? (
                                 <button className="btn btn-primary btn-block" onClick={start}>
                                     Start
                                 </button>
