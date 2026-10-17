@@ -117,8 +117,8 @@ export default function DevicePanel({ sensor, demoMode, onDemoModeChange, transp
     : demoMode
       ? "Try everything with sample data. No device needed."
       : usb
-        ? "Plug the AquaGrip into this computer, close the Arduino Serial Monitor, then tap Connect."
-        : "Turn on your AquaGrip, then tap Connect.";
+        ? "Plug the device into the computer, close the Arduino Serial Monitor, then tap Connect."
+        : "Tap Connect to play.";
 
   return (
     <section className="card">
