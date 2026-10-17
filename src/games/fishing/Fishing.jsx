@@ -9,7 +9,7 @@ import { hasCaught, recordCatch, useFishdex } from "../../data/fishdex";
 import { REP_LOW, createRepCounter, toLevel } from "../squeezePop/logic";
 import { createReel, toReach } from "./logic";
 import { FISH, TIERS } from "./fishTypes";
-import { VIEW_W, TIP_FROM_BOAT, boatForTip, createWorld, drawWorld, rigAt, splash, stepWorld } from "./engine";
+import { VIEW_W, boatForTip, createWorld, drawWorld, rigAt, splash, stepWorld } from "./engine";
 import { fishImageUrl } from "./sprites";
 import { useDevicePause } from "../useDevicePause";
 import ConnectionPause from "../ConnectionPause";
@@ -27,7 +27,12 @@ const BITE_WINDOW_S = 7; // squeeze within this long or the fish swims off
 const ESCAPE_S = 1.2;
 const LEAP_S = 0.6;
 const CATCH_S = 2.4; // leap + catch card; the clock pauses
-const DEPTH_DEADZONE = 0.06;
+const TILT_DEADZONE = 0.12; // tilt down past this to lower the hook
+const SINK_SPEED = 0.5; // depth per second at full tilt (top to bottom in ~2 s)
+const REEL_UP = 0.1; // depth raised per unit of back-and-forth turning (bottom to out: ~3-4 turns)
+const OUT = -0.2; // depth when the hook is lifted out of the water
+const GRACE_S = 2; // after a catch or an escape, fish ignore the hook this long
+const SETTLED_SPEED = 0.12; // fish ignore a hook sinking or rising faster than this (depth/s)
 const DEMO_MAX_PSI = 10;
 const DEMO_RISE = 6;
 const DEMO_FALL = 32;
@@ -70,23 +75,20 @@ function DemoControls({ held, stage }) {
   if (stage === "reel") {
     return (
       <div className="fish-demo">
-        <div className="fish-pad">
-          {btn("left", ArrowLeft, "Turn left")}
-          {btn("right", ArrowRight, "Turn right")}
-        </div>
-        <p className="game-hint">Tap left and right in turn (or the arrow keys)</p>
+        <div className="fish-pad">{btn("up", ArrowUp, "Reel in")}</div>
+        <p className="game-hint">Hold ↑ to reel (or tap ← and → in turn)</p>
       </div>
     );
   }
   return (
     <div className="fish-demo">
       <div className="pad fish-pad4">
-        {btn("up", ArrowUp, "Raise the hook", "up")}
-        {btn("left", ArrowLeft, "Move left", "left")}
-        {btn("right", ArrowRight, "Move right", "right")}
+        {btn("up", ArrowUp, "Reel the hook up", "up")}
+        {btn("left", ArrowLeft, "Move the hook left", "left")}
+        {btn("right", ArrowRight, "Move the hook right", "right")}
         {btn("down", ArrowDown, "Lower the hook", "down")}
       </div>
-      <p className="game-hint">Arrows move the boat and the hook</p>
+      <p className="game-hint">↓ lower · ↑ reel up · ← → move the hook</p>
     </div>
   );
 }
@@ -214,9 +216,9 @@ export default function Fishing({
       const ctx = canvasRef.current?.getContext("2d");
       if (world && ctx) {
         stepWorld(world, dt, { x: -999, y: -999 }, false);
-        const boatX = boatForTip(world.L.W * 0.62);
+        const boatX = boatForTip(world.L.W * 0.55);
         const tip = rigAt(world, boatX).tip;
-        drawWorld(ctx, world, { boatX, hook: { x: tip.x, y: world.L.depthY(0.12) } });
+        drawWorld(ctx, world, { boatX, hook: { x: tip.x, y: tip.y + 9 } });
       }
       raf = requestAnimationFrame(frame);
     };
@@ -307,15 +309,17 @@ export default function Fishing({
     const world = createWorld(size.W, size.H);
     worldRef.current = world;
     const { L } = world;
-    const tipMin = TIP_FROM_BOAT + 2;
-    const tipMax = L.W - 6;
+    const boatX = boatForTip(L.W * 0.55); // the boat stays put; the hook moves
     const demo = { psi: 0, yaw: 0, pitch: 0, roll: 0 };
     const g = {
       stage: "fish", // fish | bite | reel | escape | caught
       t: 0,
       timeLeft: ROUND_S,
-      boatX: boatForTip((tipMin + tipMax) / 2),
-      depth: 0,
+      depth: OUT, // start with the hook out of the water
+      hookX: null,
+      lastFreeTravel: 0,
+      grace: 0,
+      depthSpeed: 0,
       active: null,
       biteT: 0,
       hookHold: 0,
@@ -352,16 +356,16 @@ export default function Fishing({
       if (demoMode) {
         const h = held.current;
         const side = (h.has("right") ? 1 : 0) - (h.has("left") ? 1 : 0);
-        const vert = (h.has("up") ? 1 : 0) - (h.has("down") ? 1 : 0);
+        const ease = (v, target, rate) => v + clamp(target - v, -rate * dt, rate * dt);
         demo.psi = h.has("squeeze")
           ? Math.min(DEMO_MAX_PSI, demo.psi + DEMO_RISE * dt)
           : Math.max(0, demo.psi - DEMO_FALL * dt);
-        if (g.stage === "fish" || g.stage === "escape") {
-          demo.yaw = clamp(demo.yaw + side * 1.1 * dt, -1, 1);
-          demo.pitch = clamp(demo.pitch + vert * 0.7 * dt, -1, 0.2);
-        }
-        const rollTarget = g.stage === "reel" ? side * 0.8 : 0;
-        demo.roll += clamp(rollTarget - demo.roll, -2.5 * dt, 2.5 * dt);
+        // Left/right move the hook, Down tilts down (lowers it), Up turns the
+        // wrist back and forth (reels). While a fish is on, left/right reel too.
+        if (g.stage === "fish" || g.stage === "escape") demo.yaw = clamp(demo.yaw + side * 1.1 * dt, -1, 1);
+        demo.pitch = ease(demo.pitch, h.has("down") ? -1 : 0, 3);
+        if (h.has("up")) demo.roll = Math.sin(g.elapsed * 9) * 0.8;
+        else demo.roll = ease(demo.roll, g.stage === "reel" ? side * 0.8 : 0, 2.5);
         return { psi: demo.psi, yaw: demo.yaw, pitch: demo.pitch, roll: demo.roll };
       }
       const a = toAngles(reading.current);
@@ -413,22 +417,46 @@ export default function Fishing({
       g.grip.update(level, dt);
       const travel = g.reel.update(inp.roll, dt);
 
-      // Steering: wave moves the boat, tilting down lowers the hook.
+      const rig = rigAt(world, boatX);
+      if (g.hookX === null) g.hookX = rig.tip.x;
+
+      // Steering: tilting down lowers the hook (further = faster), turning
+      // the wrist back and forth reels it up (all the way out of the water to
+      // rest), and waving side to side moves it left and right.
       const free = g.stage === "fish" || g.stage === "escape";
       if (free) {
-        const tip = tipMin + ((clamp(inp.yaw, -1, 1) + 1) / 2) * (tipMax - tipMin);
-        g.boatX += (boatForTip(tip) - g.boatX) * Math.min(1, dt * 5);
-        const target = clamp((-inp.pitch - DEPTH_DEADZONE) / (1 - DEPTH_DEADZONE), 0, 1);
-        g.depth += (target - g.depth) * Math.min(1, dt * 3);
+        const before = g.depth;
+        const sink = clamp((-inp.pitch - TILT_DEADZONE) / (1 - TILT_DEADZONE), 0, 1);
+        g.depth += sink * SINK_SPEED * dt;
+        g.depth -= (travel - g.lastFreeTravel) * REEL_UP;
+        g.depth = clamp(g.depth, OUT, 1);
+        // How fast the hook is moving up or down (smoothed): fish only bite a
+        // settled hook, so you can drop straight past the shallows.
+        const speed = dt > 0 ? Math.abs(g.depth - before) / dt : 0;
+        g.depthSpeed += (speed - g.depthSpeed) * Math.min(1, dt * 6);
       }
-      const rig = rigAt(world, g.boatX);
-      // While reeling, the hook (and the fish on it) rises to the surface.
-      const hook = {
-        x: rig.tip.x,
-        y: g.stage === "reel" ? g.reelFromY + (L.surfaceY + 2 - g.reelFromY) * Math.min(1, g.progress) : L.depthY(g.depth),
-      };
+      g.lastFreeTravel = travel;
+      // While a fish is reeled in, the hook (and the fish on it) rises to the
+      // surface. Above depth 0 the hook is being lifted out of the water.
+      const hookY =
+        g.stage === "reel"
+          ? g.reelFromY + (L.surfaceY + 2 - g.reelFromY) * Math.min(1, g.progress)
+          : g.depth >= 0
+            ? L.depthY(g.depth)
+            : L.depthY(0) + (rig.tip.y + 9 - L.depthY(0)) * (g.depth / OUT);
+      const inWater = clamp((hookY - L.surfaceY) / 6, 0, 1);
+      if (free) {
+        // Out of the water the hook hangs from the rod tip.
+        const aimX = 6 + ((clamp(inp.yaw, -1, 1) + 1) / 2) * (L.W - 12);
+        const targetX = rig.tip.x + (aimX - rig.tip.x) * inWater;
+        g.hookX += (targetX - g.hookX) * Math.min(1, dt * 4);
+      }
+      const hook = { x: g.hookX, y: hookY };
+      g.grace = Math.max(0, g.grace - dt);
+      const out = hookY <= L.surfaceY + 2;
 
-      const bit = stepWorld(world, dt, hook, g.stage === "fish");
+      const settled = g.depthSpeed < SETTLED_SPEED;
+      const bit = stepWorld(world, dt, hook, g.stage === "fish" && !out && g.grace <= 0 && settled);
 
       if (g.stage === "fish" && bit) {
         bit.state = "hooked";
@@ -463,6 +491,7 @@ export default function Fishing({
           g.active = null;
           g.stage = "escape";
           g.t = 0;
+          g.grace = GRACE_S;
         }
       } else if (g.stage === "reel") {
         const tier = tierOf(g.active.sp);
@@ -483,7 +512,10 @@ export default function Fishing({
           g.active = null;
           g.stage = "caught";
           g.t = 0;
-          g.depth = 0;
+          // The hook comes out with the fish; drop it back in when ready.
+          g.depth = OUT;
+          g.hookX = rig.tip.x;
+          g.grace = GRACE_S;
           splash(world, hook.x, true);
         }
       } else if (g.stage === "escape") {
@@ -506,7 +538,7 @@ export default function Fishing({
 
       const tier = g.active ? tierOf(g.active.sp) : null;
       drawWorld(ctx, world, {
-        boatX: g.boatX,
+        boatX,
         hook: g.stage === "caught" ? null : hook,
         active: g.active,
         ring: g.stage === "bite" ? { progress: g.hookHold / tier.hold, color: tier.color, warn: g.warn } : null,
@@ -516,8 +548,8 @@ export default function Fishing({
       if (gripFillRef.current) gripFillRef.current.style.height = `${Math.min(1, level) * 100}%`;
       if (reelBarRef.current) reelBarRef.current.style.width = `${Math.min(1, g.progress) * 100}%`;
 
-      const zone = L.zoneOfY(L.depthY(g.depth));
-      const signature = [g.stage, g.score, Math.ceil(g.timeLeft), zone, g.warn, g.caught.length, tier?.id].join("|");
+      const zone = L.zoneOfY(hookY);
+      const signature = [g.stage, g.score, Math.ceil(g.timeLeft), zone, out, g.warn, g.caught.length, tier?.id].join("|");
       if (signature !== lastSignature) {
         lastSignature = signature;
         setView({
@@ -525,6 +557,7 @@ export default function Fishing({
           score: g.score,
           timeLeft: g.timeLeft,
           zone,
+          out,
           tier,
           warn: g.warn,
           lastCatch: g.lastCatch,
@@ -568,9 +601,9 @@ export default function Fishing({
           ? "It got away! Try again."
           : stage === "caught"
             ? ""
-            : view.zone === 0
-              ? "Tilt your hand down to drop the hook deeper."
-              : "Wait near a fish… wave to move the boat.";
+            : view.out
+              ? "Tilt your hand down to drop the hook in."
+              : "Wave to move the hook · turn your wrist to reel up";
 
   return (
     <>
@@ -600,11 +633,15 @@ export default function Fishing({
               <span className="fish-chip">
                 <Star size={14} aria-hidden="true" /> {view.score}
               </span>
-              <span className="fish-chip">
-                <span className="fish-zone-dot" style={{ background: zoneTier.color }} />
-                {zoneTier.zone}
-                <em style={{ color: zoneTier.color }}>{zoneTier.label}</em>
-              </span>
+              {view.out ? (
+                <span className="fish-chip">Hook out of water</span>
+              ) : (
+                <span className="fish-chip">
+                  <span className="fish-zone-dot" style={{ background: zoneTier.color }} />
+                  {zoneTier.zone}
+                  <em style={{ color: zoneTier.color }}>{zoneTier.label}</em>
+                </span>
+              )}
             </div>
 
             {stage === "bite" && (
@@ -637,10 +674,10 @@ export default function Fishing({
             <div className="overlay-card fish2-card">
               <h2 className="px-font fish2-title">Deep Sea Fishing</h2>
               <ol className="steps">
-                <li>Wave your hand left or right to move the boat.</li>
-                <li>Tilt your hand down to drop the hook. Rarer fish swim deeper.</li>
-                <li>When a fish bites, squeeze! Rarer fish need a stronger squeeze.</li>
-                <li>Turn your wrist back and forth to reel it in.</li>
+                <li>Tilt your hand down to lower the hook. Rarer fish swim deeper.</li>
+                <li>Wave your hand left or right to move the hook.</li>
+                <li>Turn your wrist back and forth to reel the hook up, even out of the water to rest.</li>
+                <li>When a fish bites, squeeze! Rarer fish need a stronger squeeze. Then reel it in.</li>
               </ol>
               <button className="fish-dex-btn" onClick={() => setShowDex(true)}>
                 <BookOpen size={16} aria-hidden="true" /> Collection {found}/{FISH.length}
@@ -651,7 +688,9 @@ export default function Fishing({
               {hasBaseline && !demoMode && (
                 <p className="overlay-note">Rest your forearm on the table, hand level, then tap Start. 2-minute round.</p>
               )}
-              {demoMode && <p className="overlay-note">Demo mode: arrow keys move, Space squeezes. Not saved to your progress.</p>}
+              {demoMode && (
+                <p className="overlay-note">Demo mode: ↓ lowers, ↑ reels up, ← → move, Space squeezes. Not saved to your progress.</p>
+              )}
               {hasBaseline && !canStart && (
                 <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
               )}
