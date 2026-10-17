@@ -1,4 +1,4 @@
-import { Clock, Flame, Hand, Play } from "lucide-react";
+import { Clock, Flame, Gauge, Hand, Play } from "lucide-react";
 import { GAMES } from "../data/games";
 import DevicePanel from "../components/DevicePanel";
 
@@ -19,6 +19,11 @@ function GameCardBody({ game }) {
           <span className="chip">
             <Clock size={14} aria-hidden="true" /> {minutes} min
           </span>
+          {level === "medium" && (
+            <span className="chip chip--medium">
+              <Gauge size={14} aria-hidden="true" /> Medium
+            </span>
+          )}
           {level === "hard" && (
             <span className="chip chip--hard">
               <Flame size={14} aria-hidden="true" /> Hard
@@ -39,6 +44,7 @@ function GameCardBody({ game }) {
 
 const SECTIONS = [
   { level: "easy", title: "Easy", note: "a good place to start" },
+  { level: "medium", title: "Medium", note: "grip and wrist together" },
   { level: "hard", title: "Hard", note: "for a bigger challenge" },
 ];
 
