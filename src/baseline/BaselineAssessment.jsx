@@ -4,6 +4,7 @@ import { angleDelta, toAngles } from "../ble/orientation";
 import { getBaseline, saveBaseline } from "../data/baseline";
 import { useDevicePause } from "../games/useDevicePause";
 import { useHand } from "../data/hand";
+import { getGuest } from "../data/guest";
 
 // Full-screen guided check, in the spirit of Face ID setup: one instruction
 // at a time, a ring of ticks that lights up as you squeeze or move, and a
@@ -508,7 +509,11 @@ export default function BaselineAssessment({
               </strong>
             </div>
           </div>
-          {!demoMode ? null : <p className="bl-small">Demo mode: kept for this visit only.</p>}
+          {demoMode ? (
+            <p className="bl-small">Demo mode: kept for this visit only.</p>
+          ) : getGuest() ? (
+            <p className="bl-small">Guest mode: kept only until the next guest.</p>
+          ) : null}
           <button className="bl-btn" onClick={() => onClose(true)}>
             Done
           </button>

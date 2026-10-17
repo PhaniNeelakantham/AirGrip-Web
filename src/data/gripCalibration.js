@@ -1,4 +1,5 @@
 import { getHand } from "./hand";
+import { getGuest, getGuestRun } from "./guest";
 
 // The player's grip range from the Baseline assessment: relaxed reading and
 // comfortable max, in psi, for each hand. Real calibration is saved in this
@@ -7,6 +8,12 @@ import { getHand } from "./hand";
 const keyFor = (hand) => (hand === "left" ? "aquagrip.gripCalibration.left.v1" : "aquagrip.gripCalibration.v1");
 const demoCalibration = {};
 const saved = {};
+const guestCalibration = { run: -1, byHand: {} }; // Guest mode: memory only
+
+const guestStore = () => {
+  if (guestCalibration.run !== getGuestRun()) Object.assign(guestCalibration, { run: getGuestRun(), byHand: {} });
+  return guestCalibration.byHand;
+};
 
 // Demo mode can be played without a baseline: a pretend grip range that
 // matches the pretend squeeze (Space bar / Hold button).
@@ -17,6 +24,7 @@ const isValid = (c) =>
 
 export function getCalibration(demoMode, hand = getHand()) {
   if (demoMode) return demoCalibration[hand] ?? null;
+  if (getGuest()) return guestStore()[hand] ?? null;
   if (!(hand in saved)) {
     try {
       const parsed = JSON.parse(localStorage.getItem(keyFor(hand)));
@@ -37,6 +45,10 @@ export function getPlayCalibration(demoMode) {
 export function saveCalibration(demoMode, calibration, hand = getHand()) {
   if (demoMode) {
     demoCalibration[hand] = calibration;
+    return;
+  }
+  if (getGuest()) {
+    guestStore()[hand] = calibration;
     return;
   }
   saved[hand] = calibration;

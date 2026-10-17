@@ -7,6 +7,7 @@ import { addSession } from "../../data/sessionStore";
 import { useElementWidth } from "../../hooks/useElementWidth";
 import { generateMaze, resolveCollisions, wallRects } from "./maze";
 import { useDevicePause } from "../useDevicePause";
+import { getGuest, notSavedText } from "../../data/guest";
 import ConnectionPause from "../ConnectionPause";
 import ResultActions, { StepTag } from "../ResultActions";
 
@@ -257,7 +258,7 @@ export default function TiltMaze({
           ...(sessionGroupId && { groupId: sessionGroupId }),
         });
       }
-      setResult({ timeS, rangeDeg, saved: !demoMode });
+      setResult({ timeS, rangeDeg, saved: !demoMode && !getGuest() });
       setPhase("done");
     },
     [demoMode, sessionGroupId]
@@ -467,7 +468,7 @@ export default function TiltMaze({
                 </div>
               </div>
               <p className="overlay-note">
-                {result.saved ? "Saved to your progress." : "Demo game, not saved to your progress."}
+                {result.saved ? "Saved to your progress." : notSavedText(demoMode)}
               </p>
               <ResultActions
                 sessionStep={sessionStep}

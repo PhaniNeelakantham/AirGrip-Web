@@ -16,6 +16,7 @@ import {
   toReach,
 } from "./logic";
 import { useDevicePause } from "../useDevicePause";
+import { getGuest, notSavedText } from "../../data/guest";
 import ConnectionPause from "../ConnectionPause";
 import ResultActions, { StepTag } from "../ResultActions";
 import { createGripTracker, createTremorTracker } from "../metrics";
@@ -240,7 +241,7 @@ export default function Fishing({
           ...(sessionGroupId && { groupId: sessionGroupId }),
         });
       }
-      setResult({ caught: g.caught, timeS: Math.round(g.elapsed), peak, rangeDeg, saved: !demoMode });
+      setResult({ caught: g.caught, timeS: Math.round(g.elapsed), peak, rangeDeg, saved: !demoMode && !getGuest() });
       setPhase("done");
     },
     [demoMode, sessionGroupId]
@@ -745,7 +746,7 @@ export default function Fishing({
                 </div>
               </div>
               <p className="overlay-note">
-                {result.saved ? "Saved to your progress." : "Demo game, not saved to your progress."}
+                {result.saved ? "Saved to your progress." : notSavedText(demoMode)}
               </p>
               <ResultActions
                 sessionStep={sessionStep}

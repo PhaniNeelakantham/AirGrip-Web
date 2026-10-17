@@ -12,10 +12,13 @@ import TodayCard from "../session/TodayCard";
 import BaselineCard from "../baseline/BaselineCard";
 import { useBaseline } from "../data/baseline";
 import SettingsSheet from "../components/SettingsSheet";
+import GuestBanner from "../components/GuestBanner";
+import { useGuest } from "../data/guest";
 
 export default function Home({ sessions, onNavigate, onStartSession, onOpenBaseline, connectionState, demoMode }) {
   const baseline = useBaseline(demoMode);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const guest = useGuest() && !demoMode;
   const data = useMemo(() => {
     const { days, sessionsThisWeek } = weekOverview(sessions);
     const { current, baseline } = baselineForRange(sessions, 30);
@@ -63,10 +66,11 @@ export default function Home({ sessions, onNavigate, onStartSession, onOpenBasel
 
       <InstallCard />
       {demoMode && <DemoBanner onNavigate={onNavigate} />}
+      {guest && <GuestBanner onOpenBaseline={onOpenBaseline} />}
 
       <header className="screen-header">
         <div className="eyebrow">{greeting()}</div>
-        <h1 className="title">Welcome back</h1>
+        <h1 className="title">{guest ? "Welcome!" : "Welcome back"}</h1>
       </header>
 
       {/* No baseline yet: lead with it. Done: a small summary under today's session. */}

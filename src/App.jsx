@@ -16,6 +16,7 @@ import { TODAY_PLAN, markPlanDone, newSessionId } from "./session/plan";
 import BaselineAssessment from "./baseline/BaselineAssessment";
 import { getBaseline } from "./data/baseline";
 import { sessionHand, useHand } from "./data/hand";
+import { getGuest } from "./data/guest";
 
 const TRANSPORT_KEY = "aquagrip.transport";
 
@@ -112,7 +113,7 @@ function App() {
     (result) => {
       const results = [...guided.results, { gameId: TODAY_PLAN[guided.step].gameId, result }];
       const isLast = guided.step + 1 >= TODAY_PLAN.length;
-      if (isLast) markPlanDone(demoMode);
+      if (isLast && !getGuest()) markPlanDone(demoMode);
       setGuided({
         ...guided,
         results,

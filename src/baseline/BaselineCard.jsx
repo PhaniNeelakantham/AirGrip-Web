@@ -1,11 +1,13 @@
 import { ChevronRight, ScanLine } from "lucide-react";
 import { useBaseline } from "../data/baseline";
 import { useHand } from "../data/hand";
+import { useGuest } from "../data/guest";
 
 // Home: invite a first baseline assessment; afterwards, a compact summary.
 export default function BaselineCard({ demoMode, onStart }) {
   const baseline = useBaseline(demoMode);
   const hand = useHand();
+  const guest = useGuest() && !demoMode;
 
   if (!baseline) {
     return (
@@ -29,7 +31,7 @@ export default function BaselineCard({ demoMode, onStart }) {
     <button className="baseline-row" onClick={onStart} aria-label={`Your ${hand}-hand baseline. Redo the baseline assessment`}>
       <ScanLine size={18} aria-hidden="true" />
       <span className="baseline-row-text">
-        <strong>{hand === "left" ? "Left" : "Right"}-hand baseline</strong> · squeeze {squeeze} psi · tilt {baseline.pitchUp}°/{baseline.pitchDown}° · turn{" "}
+        <strong>{guest ? "Guest baseline" : `${hand === "left" ? "Left" : "Right"}-hand baseline`}</strong> · squeeze {squeeze} psi · tilt {baseline.pitchUp}°/{baseline.pitchDown}° · turn{" "}
         {baseline.rollRight}°/{baseline.rollLeft}°
         {Number.isFinite(baseline.yawRight) && ` · wave ${baseline.yawRight}°/${baseline.yawLeft}°`}
       </span>

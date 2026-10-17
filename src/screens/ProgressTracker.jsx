@@ -27,6 +27,8 @@ import DemoBanner from "../components/DemoBanner";
 import { GAMES } from "../data/games";
 import AdvancedDetails from "../components/AdvancedDetails";
 import { useHand } from "../data/hand";
+import { useGuest } from "../data/guest";
+import GuestBanner from "../components/GuestBanner";
 
 const ADVANCED_KEY = "aquagrip.advancedOpen";
 function loadAdvancedOpen() {
@@ -80,6 +82,7 @@ function EmptyProgress({ onNavigate }) {
 
 export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
   const hand = useHand();
+  const guest = useGuest() && !demoMode;
   const [rangeId, setRangeId] = useState("30d");
   const range = RANGE_OPTIONS.find((r) => r.id === rangeId);
 
@@ -123,6 +126,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
   const header = (
     <>
       {demoMode && <DemoBanner onNavigate={onNavigate} />}
+      {guest && <GuestBanner />}
       <header className="screen-header">
         <div className="eyebrow">Progress · {hand === "left" ? "Left" : "Right"} hand</div>
         <h1 className="title">How you're doing</h1>

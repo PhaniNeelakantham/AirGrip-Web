@@ -3180,3 +3180,58 @@ button.game-card:hover {
     animation: none;
   }
 }
+
+/* ---------- Guest mode ---------- */
+.guest-banner {
+  flex-wrap: wrap;
+}
+
+.guest-banner > span {
+  flex: 1;
+  min-width: 160px;
+}
+
+.guest-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.btn.guest-next {
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 15px;
+}
+
+.sheet-divider {
+  height: 1px;
+  margin: 20px 0 16px;
+  background: var(--border);
+}
+
+.switch-row.sheet-switch {
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--ink);
+}
+
+.sheet-switch > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 16px;
+}
+
+.sheet-switch-note {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+.sheet-switch .switch {
+  flex: none;
+  margin-top: 2px;
+}

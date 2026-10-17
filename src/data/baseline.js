@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { saveCalibration } from "./gripCalibration";
 import { getHand, subscribeHand } from "./hand";
+import { getGuest, getGuestRun, subscribeGuest } from "./guest";
 
 // The player's starting point from the Baseline assessment: grip range
 // (relaxed + comfortable max, psi) and wrist range in each direction (degrees
@@ -12,6 +13,12 @@ import { getHand, subscribeHand } from "./hand";
 const keyFor = (hand) => (hand === "left" ? "aquagrip.baseline.left.v1" : "aquagrip.baseline.v1");
 const demoBaseline = {};
 const saved = {};
+const guestBaseline = { run: -1, byHand: {} }; // Guest mode: memory only
+
+const guestStore = () => {
+  if (guestBaseline.run !== getGuestRun()) Object.assign(guestBaseline, { run: getGuestRun(), byHand: {} });
+  return guestBaseline.byHand;
+};
 const listeners = new Set();
 
 const isValid = (b) =>
@@ -21,6 +28,7 @@ const isValid = (b) =>
 
 export function getBaseline(demoMode, hand = getHand()) {
   if (demoMode) return demoBaseline[hand] ?? null;
+  if (getGuest()) return guestStore()[hand] ?? null;
   if (!(hand in saved)) {
     try {
       const parsed = JSON.parse(localStorage.getItem(keyFor(hand)));
@@ -35,6 +43,8 @@ export function getBaseline(demoMode, hand = getHand()) {
 export function saveBaseline(demoMode, baseline, hand = getHand()) {
   if (demoMode) {
     demoBaseline[hand] = baseline;
+  } else if (getGuest()) {
+    guestStore()[hand] = baseline;
   } else {
     saved[hand] = baseline;
     try {
@@ -48,13 +58,15 @@ export function saveBaseline(demoMode, baseline, hand = getHand()) {
   listeners.forEach((fn) => fn());
 }
 
-// Also changes when the player switches hands.
+// Also changes when the player switches hands or guests.
 function subscribe(fn) {
   listeners.add(fn);
   const offHand = subscribeHand(fn);
+  const offGuest = subscribeGuest(fn);
   return () => {
     listeners.delete(fn);
     offHand();
+    offGuest();
   };
 }
 

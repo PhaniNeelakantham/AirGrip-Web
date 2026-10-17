@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Hand, Heart, PartyPopper, RotateCw, Rocket, Timer, Trophy, X } from "lucide-react";
 import { angleDelta, toAngles } from "../../ble/orientation";
 import { addSession } from "../../data/sessionStore";
+import { getGuest, notSavedText } from "../../data/guest";
 import { getCalibration } from "../../data/gripCalibration";
 import { REP_HIGH, createRepCounter, toLevel } from "../squeezePop/logic";
 import ResultActions, { StepTag } from "../ResultActions";
@@ -277,7 +278,7 @@ export default function BalloonRescue({
                 dodged: s.dodged,
                 hits: s.hits,
                 rangeDeg,
-                saved: !demoMode && outcome !== "deflated",
+                saved: !demoMode && !getGuest() && outcome !== "deflated",
             });
             setPhase("done");
         },
@@ -604,7 +605,7 @@ export default function BalloonRescue({
                                     ? "Nothing saved for this round."
                                     : result.saved
                                         ? "Saved to your progress."
-                                        : "Demo game, not saved to your progress."}
+                                        : notSavedText(demoMode)}
                             </p>
                             <ResultActions
                                 sessionStep={sessionStep}

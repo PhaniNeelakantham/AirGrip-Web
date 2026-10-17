@@ -5,6 +5,7 @@ import { getBaseline } from "../../data/baseline";
 import { getPlayCalibration } from "../../data/gripCalibration";
 import { TARGETS, createRepCounter, stepBubble, toLevel, REP_LOW } from "./logic";
 import { useDevicePause } from "../useDevicePause";
+import { getGuest, notSavedText } from "../../data/guest";
 import ConnectionPause from "../ConnectionPause";
 import ResultActions, { StepTag } from "../ResultActions";
 import { createGripTracker, createTremorTracker, fatiguePct } from "../metrics";
@@ -187,7 +188,7 @@ export default function SqueezePop({
           ...(sessionGroupId && { groupId: sessionGroupId }),
         });
       }
-      setResult({ popped: g.popped, peak, reps: g.reps.count, saved: !demoMode });
+      setResult({ popped: g.popped, peak, reps: g.reps.count, saved: !demoMode && !getGuest() });
       setPhase("done");
     },
     [demoMode, sessionGroupId]
@@ -492,7 +493,7 @@ export default function SqueezePop({
                 </div>
               </div>
               <p className="overlay-note">
-                {result.saved ? "Saved to your progress." : "Demo game, not saved to your progress."}
+                {result.saved ? "Saved to your progress." : notSavedText(demoMode)}
               </p>
               <ResultActions
                 sessionStep={sessionStep}
