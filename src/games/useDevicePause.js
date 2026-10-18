@@ -23,6 +23,9 @@ export function useDevicePause({ active, demoMode, connectionState, lastDataAtRe
   }, [watching, lastDataAtRef]);
 
   const lost = watching && (connectionState !== "connected" || stale);
+  // Still connected, but readings stopped: the sensor itself went quiet
+  // (the firmware restarts it), not the Bluetooth / USB link.
+  const silent = lost && connectionState === "connected";
   if (lost && !needsResume) setNeedsResume(true);
   const paused = watching && needsResume;
 
@@ -33,5 +36,5 @@ export function useDevicePause({ active, demoMode, connectionState, lastDataAtRe
   }, [paused]);
 
   const resume = useCallback(() => setNeedsResume(false), []);
-  return { lost, paused, pausedRef, resume };
+  return { lost, silent, paused, pausedRef, resume };
 }

@@ -29,7 +29,10 @@ const ESCAPE_S = 1.2;
 const LEAP_S = 0.6;
 const CATCH_S = 2.4; // leap + catch card; the clock pauses
 const TILT_DEADZONE = 0.12; // tilt down past this to lower the hook
-const SINK_SPEED = 0.5; // depth per second at full tilt (top to bottom in ~2 s)
+const SINK_SPEED = 0.4; // depth per second at full tilt (top to bottom in ~2.5 s)
+const DEPTH_MAX_SPEED = 0.45; // the hook glides to its depth, never faster than this (depth/s)
+const HOOK_MAX_SPEED = 0.45; // ...and side to side at most this share of the lake per second
+const YAW_SMOOTH_S = 0.2; // the wave reading is smoothed over about this long
 const REEL_UP = 0.1; // depth raised per unit of back-and-forth turning (bottom to out: ~3-4 turns)
 const OUT = -0.2; // depth when the hook is lifted out of the water
 const GRACE_S = 2; // after a catch or an escape, fish ignore the hook this long
@@ -321,6 +324,8 @@ export default function Fishing({
       t: 0,
       timeLeft: ROUND_S,
       depth: OUT, // start with the hook out of the water
+      depthTarget: OUT, // where tilting / reeling wants it; depth glides there
+      yawF: 0, // smoothed wave reading
       hookX: null,
       lastFreeTravel: 0,
       yawZero: 0,
@@ -437,9 +442,13 @@ export default function Fishing({
       if (free) {
         const before = g.depth;
         const sink = clamp((-inp.pitch - TILT_DEADZONE) / (1 - TILT_DEADZONE), 0, 1);
-        g.depth += sink * SINK_SPEED * dt;
-        g.depth -= (travel - g.lastFreeTravel) * REEL_UP;
-        g.depth = clamp(g.depth, OUT, 1);
+        g.depthTarget += sink * SINK_SPEED * dt;
+        g.depthTarget -= (travel - g.lastFreeTravel) * REEL_UP;
+        g.depthTarget = clamp(g.depthTarget, OUT, 1);
+        // Glide toward it: a quick turn of the wrist lifts the hook smoothly
+        // instead of jerking it up.
+        const step = (g.depthTarget - g.depth) * Math.min(1, dt * 5);
+        g.depth += clamp(step, -DEPTH_MAX_SPEED * dt, DEPTH_MAX_SPEED * dt);
         // How fast the hook is moving up or down (smoothed): fish only bite a
         // settled hook, so you can drop straight past the shallows.
         const speed = dt > 0 ? Math.abs(g.depth - before) / dt : 0;
@@ -459,16 +468,19 @@ export default function Fishing({
       // side is measured from where the hand is at that moment (which also
       // cancels any slow drift of the sensor's yaw).
       const isOut = hookY <= L.surfaceY + 2;
-      if (g.wasOut && !isOut) g.yawZero = inp.yaw;
+      // Smooth the wave reading so small wobbles don't make the hook jitter.
+      g.yawF += (inp.yaw - g.yawF) * Math.min(1, dt / YAW_SMOOTH_S);
+      if (g.wasOut && !isOut) g.yawZero = g.yawF;
       g.wasOut = isOut;
       // ...then that offset fades over a few seconds, so if the hand was
       // turned when the hook went in, the far side never stays out of reach.
       if (!isOut) g.yawZero -= clamp(g.yawZero, -YAW_ZERO_FADE * dt, YAW_ZERO_FADE * dt);
       if (free) {
         // Out of the water the hook hangs from the rod tip.
-        const aimX = L.W / 2 + clamp(inp.yaw - g.yawZero, -1, 1) * (L.W / 2 - 6);
+        const aimX = L.W / 2 + clamp(g.yawF - g.yawZero, -1, 1) * (L.W / 2 - 6);
         const targetX = rig.tip.x + (aimX - rig.tip.x) * inWater;
-        g.hookX += (targetX - g.hookX) * Math.min(1, dt * 4);
+        const maxStep = HOOK_MAX_SPEED * L.W * dt;
+        g.hookX += clamp((targetX - g.hookX) * Math.min(1, dt * 3), -maxStep, maxStep);
       }
       const hook = { x: g.hookX, y: hookY };
       g.grace = Math.max(0, g.grace - dt);
@@ -487,6 +499,7 @@ export default function Fishing({
         g.hookReached = false;
         // The hook stays where the fish took it.
         g.depth = L.depthOfY(bit.y);
+        g.depthTarget = g.depth;
       } else if (g.stage === "bite") {
         const tier = tierOf(g.active.sp);
         g.biteT += dt;
@@ -533,6 +546,7 @@ export default function Fishing({
           g.t = 0;
           // The hook comes out with the fish; drop it back in when ready.
           g.depth = OUT;
+          g.depthTarget = OUT;
           g.hookX = rig.tip.x;
           g.grace = GRACE_S;
           splash(world, hook.x, true);
@@ -740,6 +754,7 @@ export default function Fishing({
         {phase === "playing" && link.paused && (
           <ConnectionPause
             lost={link.lost}
+            silent={link.silent}
             connecting={connectionState === "connecting"}
             readyHint="Rest your forearm on the table with your hand level."
             onReconnect={onReconnect}

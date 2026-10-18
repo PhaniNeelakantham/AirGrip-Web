@@ -125,6 +125,8 @@ export function wristTuning(baseline) {
   return {
     ...tilt,
     yawFull: { right: yawFullFor(baseline?.yawRight), left: yawFullFor(baseline?.yawLeft) },
-    yawRightSign: baseline?.yawRightSign ?? 1,
+    // Without a measured direction (Developer mode, or a baseline from before
+    // the wave steps): on the AquaGrip, waving right reads as negative yaw.
+    yawRightSign: baseline?.yawRightSign ?? -1,
   };
 }

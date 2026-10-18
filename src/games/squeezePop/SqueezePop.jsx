@@ -463,6 +463,7 @@ export default function SqueezePop({
         {phase === "playing" && link.paused && (
           <ConnectionPause
             lost={link.lost}
+            silent={link.silent}
             connecting={connectionState === "connecting"}
             readyHint="Relax your hand."
             onReconnect={onReconnect}
