@@ -1,9 +1,9 @@
-import { Clock, Flame, Gauge, Hand, Play } from "lucide-react";
+import { Clock, Hand, Play } from "lucide-react";
 import { GAMES } from "../data/games";
 import DevicePanel from "../components/DevicePanel";
 
 function GameCardBody({ game }) {
-  const { name, desc, trains, minutes, icon: Icon, playable, level } = game;
+  const { name, desc, trains, minutes, icon: Icon, playable } = game;
   return (
     <>
       <div className="game-art">
@@ -19,16 +19,6 @@ function GameCardBody({ game }) {
           <span className="chip">
             <Clock size={14} aria-hidden="true" /> {minutes} min
           </span>
-          {level === "medium" && (
-            <span className="chip chip--medium">
-              <Gauge size={14} aria-hidden="true" /> Medium
-            </span>
-          )}
-          {level === "hard" && (
-            <span className="chip chip--hard">
-              <Flame size={14} aria-hidden="true" /> Hard
-            </span>
-          )}
           {playable ? (
             <span className="play-badge">
               <Play size={13} fill="currentColor" aria-hidden="true" /> Play

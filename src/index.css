@@ -3579,23 +3579,9 @@ button.game-card:hover {
   color: #fff3dc;
 }
 
-.chip.chip--hard {
-  background: var(--bad-bg);
-  color: var(--bad);
-}
 
-.chip.chip--hard svg {
-  color: var(--bad);
-}
 
-.chip.chip--medium {
-  background: var(--tint-butter);
-  color: var(--icon-butter);
-}
 
-.chip.chip--medium svg {
-  color: var(--icon-butter);
-}
 
 /* Fishing on a laptop: a wider screen with the lake filling the window's
    height (no scrolling), and the instruction + demo buttons beside it. */
