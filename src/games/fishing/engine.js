@@ -14,7 +14,9 @@ import {
   hookSprite,
 } from "./sprites";
 
-export const VIEW_W = 112; // art pixels across; the height follows the screen
+// Art pixels across: about one per 3.6 screen pixels, so the pixels look
+// the same size on a phone and a laptop. The height follows the screen.
+export const viewWidthFor = (cssWidth) => Math.max(112, Math.min(220, Math.round(cssWidth / 3.6)));
 
 const SKY_TOP = "#4fc8ef";
 const SKY_BOTTOM = "#c6f2f8";
@@ -134,9 +136,12 @@ export function createWorld(W, H) {
     curious: null,
     t: 0,
   };
-  for (let z = 0; z < ZONE_COUNT; z++) for (let i = 0; i < ZONE_POPULATION[z]; i++) spawnFish(world, z, true);
+  for (let z = 0; z < ZONE_COUNT; z++) for (let i = 0; i < population(world, z); i++) spawnFish(world, z, true);
   return world;
 }
+
+// A wider lake (laptop) holds proportionally more fish.
+const population = (world, z) => Math.round(ZONE_POPULATION[z] * Math.max(1, world.L.W / 112));
 
 function spawnFish(world, z, anywhere) {
   const { L } = world;
@@ -181,7 +186,7 @@ export function stepWorld(world, dt, hook, canBite) {
   for (let z = 0; z < ZONE_COUNT; z++) {
     const count = world.fishes.filter((f) => f.zone === z && f.state !== "flee").length;
     world.zoneNext[z] -= dt;
-    if (count < ZONE_POPULATION[z] && world.zoneNext[z] <= 0) {
+    if (count < population(world, z) && world.zoneNext[z] <= 0) {
       spawnFish(world, z, false);
       world.zoneNext[z] = rand(1.5, 4) + z * 0.4;
     }

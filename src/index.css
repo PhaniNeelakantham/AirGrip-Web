@@ -3596,3 +3596,38 @@ button.game-card:hover {
 .chip.chip--medium svg {
   color: var(--icon-butter);
 }
+
+/* Fishing on a laptop: a wider screen with the lake filling the window's
+   height (no scrolling), and the instruction + demo buttons beside it. */
+@media (min-width: 900px) {
+  #root:has(.fish2-layout) {
+    max-width: min(1080px, calc(100vw - 48px));
+  }
+
+  .fish2-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .fish2-area {
+    /* window - page margins (48) - top padding (20) - game bar (64) - bottom padding (32) */
+    height: max(420px, calc(100svh - 164px));
+  }
+
+  .fish2-side {
+    position: sticky;
+    top: 20px;
+  }
+
+  .fish2-side .fish2-tip {
+    margin: 0 0 16px;
+    width: 100%;
+  }
+
+  .fish2-side .fish-demo,
+  .fish2-side .hold-wrap {
+    margin-top: 0;
+  }
+}

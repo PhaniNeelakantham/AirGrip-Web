@@ -9,7 +9,7 @@ import { hasCaught, recordCatch, useFishdex } from "../../data/fishdex";
 import { REP_LOW, createRepCounter, toLevel } from "../squeezePop/logic";
 import { createReel, toReach } from "./logic";
 import { FISH, TIERS } from "./fishTypes";
-import { VIEW_W, boatForTip, createWorld, drawWorld, rigAt, splash, stepWorld } from "./engine";
+import { viewWidthFor, boatForTip, createWorld, drawWorld, rigAt, splash, stepWorld } from "./engine";
 import { fishImageUrl } from "./sprites";
 import { useDevicePause } from "../useDevicePause";
 import ConnectionPause from "../ConnectionPause";
@@ -180,16 +180,17 @@ export default function Fishing({
   // Demo mode plays with default ranges; the baseline is optional there.
   const hasBaseline = demoMode || (baseline !== null && getCalibration(false) !== null);
 
-  // The canvas is VIEW_W art pixels wide and as tall as the screen allows;
-  // CSS scales it up with crisp pixels.
+  // The canvas is a small pixel grid (wider on bigger screens) with the same
+  // shape as the lake on screen; CSS scales it up with crisp pixels.
   useEffect(() => {
     const el = areaRef.current;
     if (!el) return;
     const measure = () => {
       const { width, height } = el.getBoundingClientRect();
       if (!width || !height) return;
-      const H = Math.round((VIEW_W * height) / width);
-      setSize((prev) => (prev && Math.abs(prev.H - H) < 2 ? prev : { W: VIEW_W, H }));
+      const W = viewWidthFor(width);
+      const H = Math.round((W * height) / width);
+      setSize((prev) => (prev && prev.W === W && Math.abs(prev.H - H) < 2 ? prev : { W, H }));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -639,6 +640,7 @@ export default function Fishing({
         {view?.lastCatch && stage === "caught" ? `You caught a ${view.lastCatch.sp.name}!` : tip}
       </p>
 
+      <div className="fish2-layout">
       <div className="fish2-area" ref={areaRef}>
         <canvas ref={canvasRef} className="fish2-canvas" aria-hidden="true" />
 
@@ -792,14 +794,18 @@ export default function Fishing({
         )}
       </div>
 
-      {playing && (
-        <div className={`fish2-tip px-font${stage === "bite" ? " is-alert" : ""}`} aria-hidden="true">
-          {stage === "caught" && view.lastCatch
-            ? `You caught a ${view.lastCatch.sp.name}!`
-            : `${view.lastCall && stage !== "fish" ? "Last fish! " : ""}${tip}`}
-        </div>
-      )}
-      {playing && stage !== "caught" && demoMode && <DemoControls held={held} stage={stage} />}
+      {/* Below the lake on a phone; beside it on a laptop. */}
+      <div className="fish2-side">
+        {playing && (
+          <div className={`fish2-tip px-font${stage === "bite" ? " is-alert" : ""}`} aria-hidden="true">
+            {stage === "caught" && view.lastCatch
+              ? `You caught a ${view.lastCatch.sp.name}!`
+              : `${view.lastCall && stage !== "fish" ? "Last fish! " : ""}${tip}`}
+          </div>
+        )}
+        {playing && stage !== "caught" && demoMode && <DemoControls held={held} stage={stage} />}
+      </div>
+      </div>
     </>
   );
 }
