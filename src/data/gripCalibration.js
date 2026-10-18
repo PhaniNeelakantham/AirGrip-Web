@@ -1,5 +1,6 @@
 import { getHand } from "./hand";
 import { getGuest, getGuestRun } from "./guest";
+import { getDevMode } from "./devMode";
 
 // The player's grip range from the Baseline assessment: relaxed reading and
 // comfortable max, in psi, for each hand. Real calibration is saved in this
@@ -36,10 +37,20 @@ export function getCalibration(demoMode, hand = getHand()) {
   return saved[hand];
 }
 
-// What a grip game plays with: the real range, or in Demo mode the pretend
-// default when no baseline was taken.
-export function getPlayCalibration(demoMode) {
-  return getCalibration(demoMode) ?? (demoMode ? DEMO_DEFAULT : null);
+// Developer mode without a baseline: "relaxed" is the reading when the game
+// starts, and this much above it counts as a full squeeze.
+const DEV_SPAN_PSI = 6;
+
+// What a grip game plays with: the real range; or with no baseline, the
+// pretend default in Demo mode, or a default range in Developer mode
+// (`restNow` = the live reading when the game starts).
+export function getPlayCalibration(demoMode, restNow) {
+  const cal = getCalibration(demoMode);
+  if (cal) return cal;
+  if (demoMode) return DEMO_DEFAULT;
+  if (!getDevMode()) return null;
+  const rest = Number.isFinite(restNow) && restNow > 0.5 ? restNow : 14.7;
+  return { restPsi: rest, maxPsi: rest + DEV_SPAN_PSI };
 }
 
 export function saveCalibration(demoMode, calibration, hand = getHand()) {

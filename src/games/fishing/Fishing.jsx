@@ -6,6 +6,7 @@ import { getCalibration, getPlayCalibration } from "../../data/gripCalibration";
 import { getBaseline, wristTuning } from "../../data/baseline";
 import { getGuest, notSavedText, useGuest } from "../../data/guest";
 import { hasCaught, recordCatch, useFishdex } from "../../data/fishdex";
+import { useDevMode } from "../../data/devMode";
 import { REP_LOW, createRepCounter, toLevel } from "../squeezePop/logic";
 import { createReel, toReach } from "./logic";
 import { FISH, TIERS } from "./fishTypes";
@@ -178,7 +179,9 @@ export default function Fishing({
   const canStart = demoMode || connected;
   const baseline = getBaseline(demoMode);
   // Demo mode plays with default ranges; the baseline is optional there.
-  const hasBaseline = demoMode || (baseline !== null && getCalibration(false) !== null);
+  // Developer mode (Settings) skips it on the real device too.
+  const devMode = useDevMode();
+  const hasBaseline = demoMode || devMode || (baseline !== null && getCalibration(false) !== null);
 
   // The canvas is a small pixel grid (wider on bigger screens) with the same
   // shape as the lake on screen; CSS scales it up with crisp pixels.
@@ -305,7 +308,7 @@ export default function Fishing({
   // Main game loop.
   useEffect(() => {
     if (phase !== "playing" || !size) return;
-    const cal = getPlayCalibration(demoMode);
+    const cal = getPlayCalibration(demoMode, reading.current.forcePsi);
     const tune = wristTuning(getBaseline(demoMode));
     const persist = !demoMode && !getGuest();
     const world = createWorld(size.W, size.H);

@@ -4,6 +4,7 @@ import { Check, Hand, ScanLine, X } from "lucide-react";
 import { setHand, useHand } from "../data/hand";
 import { useBaseline } from "../data/baseline";
 import { setGuest, useGuest } from "../data/guest";
+import { setDevMode, useDevMode } from "../data/devMode";
 
 const HANDS = [
   { id: "left", label: "Left hand" },
@@ -18,6 +19,7 @@ export default function SettingsSheet({ demoMode, onClose, onOpenBaseline }) {
   const hand = useHand();
   const baseline = useBaseline(demoMode);
   const guest = useGuest();
+  const devMode = useDevMode();
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -88,6 +90,18 @@ export default function SettingsSheet({ demoMode, onClose, onOpenBaseline }) {
         {guest && demoMode && (
           <p className="sheet-note">Guest mode is for the real device. Demo mode is on, which never saves anyway.</p>
         )}
+
+        <div className="sheet-divider" />
+        <label className="switch-row sheet-switch">
+          <span>
+            <strong>Developer mode</strong>
+            <span className="sheet-switch-note">
+              Play every game right away on the real device, without the baseline assessment. Games use
+              default ranges, so they won't be tuned to anyone. For testing.
+            </span>
+          </span>
+          <button className="switch" role="switch" aria-checked={devMode} onClick={() => setDevMode(!devMode)} />
+        </label>
       </div>
     </div>,
     document.body

@@ -126,6 +126,7 @@ export default function SqueezePop({
   // Demo mode plays with a default grip range; the baseline is optional there.
   const hasCalibration = getPlayCalibration(demoMode) !== null;
   const demoUntuned = demoMode && !getBaseline(true);
+  const devUntuned = !demoMode && !getBaseline(false); // Developer mode, no baseline
 
   const readPsi = useCallback(
     (dt) => {
@@ -197,7 +198,7 @@ export default function SqueezePop({
   // Main game loop.
   useEffect(() => {
     if (phase !== "playing") return;
-    const cal = getPlayCalibration(demoMode);
+    const cal = getPlayCalibration(demoMode, reading.current.forcePsi);
     const g = {
       bubble: null,
       wait: 0.6,
@@ -440,7 +441,11 @@ export default function SqueezePop({
                   <button className="btn btn-primary btn-block" onClick={begin}>
                     Start
                   </button>
-                  {!demoUntuned && <p className="overlay-note">Bubble strengths are set from your baseline.</p>}
+                  {devUntuned ? (
+                    <p className="overlay-note">Developer mode: default bubble strengths (no baseline).</p>
+                  ) : (
+                    !demoUntuned && <p className="overlay-note">Bubble strengths are set from your baseline.</p>
+                  )}
                 </>
               ) : (
                 <button
