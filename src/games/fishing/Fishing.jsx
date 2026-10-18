@@ -31,7 +31,7 @@ const CATCH_S = 2.4; // leap + catch card; the clock pauses
 const TILT_DEADZONE = 0.12; // tilt down past this to lower the hook
 const SINK_SPEED = 0.4; // depth per second at full tilt (top to bottom in ~2.5 s)
 const DEPTH_MAX_SPEED = 0.45; // the hook glides to its depth, never faster than this (depth/s)
-const HOOK_MAX_SPEED = 0.45; // ...and side to side at most this share of the lake per second
+const HOOK_MAX_SPEED = 0.3; // ...and side to side at most this share of the lake per second
 const YAW_SMOOTH_S = 0.2; // the wave reading is smoothed over about this long
 const REEL_UP = 0.1; // depth raised per unit of back-and-forth turning (bottom to out: ~3-4 turns)
 const OUT = -0.2; // depth when the hook is lifted out of the water
@@ -480,7 +480,7 @@ export default function Fishing({
         const aimX = L.W / 2 + clamp(g.yawF - g.yawZero, -1, 1) * (L.W / 2 - 6);
         const targetX = rig.tip.x + (aimX - rig.tip.x) * inWater;
         const maxStep = HOOK_MAX_SPEED * L.W * dt;
-        g.hookX += clamp((targetX - g.hookX) * Math.min(1, dt * 3), -maxStep, maxStep);
+        g.hookX += clamp((targetX - g.hookX) * Math.min(1, dt * 2.2), -maxStep, maxStep);
       }
       const hook = { x: g.hookX, y: hookY };
       g.grace = Math.max(0, g.grace - dt);
