@@ -17,6 +17,7 @@ import BaselineAssessment from "./baseline/BaselineAssessment";
 import { getBaseline } from "./data/baseline";
 import { sessionHand, useHand } from "./data/hand";
 import { getGuest } from "./data/guest";
+import { getDevMode } from "./data/devMode";
 
 const TRANSPORT_KEY = "aquagrip.transport";
 
@@ -87,7 +88,7 @@ function App() {
   const openSession = () => {
     // The games are tuned from the baseline, so take it first if it's missing
     // (optional in Demo mode, which has default ranges).
-    if (!demoMode && !getBaseline(false)) {
+    if (!demoMode && !getDevMode() && !getBaseline(false)) {
       setBaselineOpen({ thenSession: true });
       return;
     }

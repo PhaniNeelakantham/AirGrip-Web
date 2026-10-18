@@ -14,11 +14,14 @@ import { useBaseline } from "../data/baseline";
 import SettingsSheet from "../components/SettingsSheet";
 import GuestBanner from "../components/GuestBanner";
 import { useGuest } from "../data/guest";
+import { setDevMode, useDevMode } from "../data/devMode";
+import { Wrench } from "lucide-react";
 
 export default function Home({ sessions, onNavigate, onStartSession, onOpenBaseline, connectionState, demoMode }) {
   const baseline = useBaseline(demoMode);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const guest = useGuest() && !demoMode;
+  const devMode = useDevMode() && !demoMode;
   const data = useMemo(() => {
     const { days, sessionsThisWeek } = weekOverview(sessions);
     const { current, baseline } = baselineForRange(sessions, 30);
@@ -61,6 +64,17 @@ export default function Home({ sessions, onNavigate, onStartSession, onOpenBasel
       <InstallCard />
       {demoMode && <DemoBanner onNavigate={onNavigate} />}
       {guest && <GuestBanner onOpenBaseline={onOpenBaseline} />}
+      {devMode && (
+        <div className="banner tint-butter" role="status">
+          <Wrench size={18} aria-hidden="true" />
+          <span>
+            <strong>Developer mode</strong>: games start without the baseline.{" "}
+            <button className="link-btn" onClick={() => setDevMode(false)}>
+              Turn off
+            </button>
+          </span>
+        </div>
+      )}
 
       <header className="screen-header">
         <div className="eyebrow">{greeting()}</div>

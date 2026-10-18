@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Hand, Heart, PartyPopper, RotateCw, Rocket, Time
 import { angleDelta, toAngles } from "../../ble/orientation";
 import { addSession } from "../../data/sessionStore";
 import { getGuest, notSavedText } from "../../data/guest";
+import { useDevMode } from "../../data/devMode";
 import { getCalibration } from "../../data/gripCalibration";
 import { REP_HIGH, createRepCounter, toLevel } from "../squeezePop/logic";
 import ResultActions, { StepTag } from "../ResultActions";
@@ -166,7 +167,8 @@ export default function BalloonRescue({
     const connected = connectionState === "connected";
     const canStart = demoMode || connected;
     // The pump strength comes from the Baseline assessment (optional in Demo mode).
-    const hasCalibration = demoMode || getCalibration(false) !== null;
+    const devMode = useDevMode(); // Settings: play without the baseline
+    const hasCalibration = demoMode || devMode || getCalibration(false) !== null;
 
     // Keep the canvas matched to its container.
     useEffect(() => {

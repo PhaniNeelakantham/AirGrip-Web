@@ -440,6 +440,7 @@ export default function TiltMaze({
         {link.paused && (
           <ConnectionPause
             lost={link.lost}
+            silent={link.silent}
             connecting={connectionState === "connecting"}
             readyHint="Hold your hand level."
             onReconnect={onReconnect}
