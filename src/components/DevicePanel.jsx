@@ -35,12 +35,23 @@ function AxisBar({ label, hint, degrees }) {
 
 // The sensor reads absolute pressure (a relaxed hand may read ~14.7 psi), so
 // the meter shows squeeze *above* rest: the saved grip check if there is one,
-// otherwise the lowest reading seen since connecting.
+// otherwise the lowest reading seen since connecting. Only believable
+// readings count: not the firmware's 0.0 placeholder while the pressure
+// sensor starts up (opening the USB port can restart the board), and not a
+// one-off jump away from the previous reading.
+const PLACEHOLDER_PSI = 0.5;
+const MAX_JUMP_PSI = 1.5;
+
 function LiveMeters({ reading, demoMode }) {
   const [center, setCenter] = useState({ pitch: 0, roll: 0, yaw: 0 });
   const [lowest, setLowest] = useState(null);
-  const isRealSample = reading !== ZERO_READING;
-  if (isRealSample && (lowest === null || reading.forcePsi < lowest)) setLowest(reading.forcePsi);
+  const [prev, setPrev] = useState(null); // the previous believable reading
+  const isRealSample = reading !== ZERO_READING && reading.forcePsi > PLACEHOLDER_PSI;
+  if (isRealSample && reading !== prev) {
+    const steady = prev !== null && Math.abs(reading.forcePsi - prev.forcePsi) < MAX_JUMP_PSI;
+    if (steady && (lowest === null || reading.forcePsi < lowest)) setLowest(reading.forcePsi);
+    setPrev(reading);
+  }
 
   const calibration = demoMode ? null : getCalibration(false);
   const restPsi = calibration?.restPsi ?? lowest ?? reading.forcePsi;

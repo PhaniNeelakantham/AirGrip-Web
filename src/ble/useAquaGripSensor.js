@@ -181,6 +181,10 @@ export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
       const reader = decoder.readable.getReader();
       serialRef.current = { port, reader, piped };
       let buffer = "";
+      // We start listening partway through whatever the board is printing,
+      // so the first line is usually cut off (e.g. "4.71,..." from
+      // "14.71,..."), which would look like a real, very low pressure.
+      let firstLine = true;
       try {
         for (;;) {
           const { value, done } = await reader.read();
@@ -188,6 +192,10 @@ export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
           buffer += value;
           const lines = buffer.split(/\r?\n/);
           buffer = lines.pop();
+          if (firstLine && lines.length) {
+            lines.shift();
+            firstLine = false;
+          }
           lines.forEach(handleSerialLine);
         }
       } catch (err) {
