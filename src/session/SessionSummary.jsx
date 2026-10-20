@@ -16,6 +16,8 @@ function describe(gameId, r) {
       return r.outcome === "deflated"
         ? `The balloon didn't fill this time (${r.pumps} pumps)`
         : `${r.pumps} pumps · ${r.dodged} asteroids dodged`;
+    case "garden":
+      return `${r.flowers} flowers bloomed · longest steady hold ${r.steadyS.toFixed(1)} s`;
     case "fishing":
       return `${r.caught} fish caught · best squeeze ${r.peak.toFixed(1)} psi · ${r.rangeDeg}° of wrist motion`;
     default:

@@ -10,6 +10,7 @@ import TiltMaze from "./games/tiltMaze/TiltMaze";
 import SqueezePop from "./games/squeezePop/SqueezePop";
 import BalloonRescue from "./games/balloonRescue/BalloonRescue";
 import Fishing from "./games/fishing/Fishing";
+import Garden from "./games/garden/Garden";
 import SessionIntro from "./session/SessionIntro";
 import SessionSummary from "./session/SessionSummary";
 import { TODAY_PLAN, markPlanDone, newSessionId } from "./session/plan";
@@ -37,6 +38,7 @@ const GAME_SCREENS = {
   "squeeze-pop": memo(SqueezePop),
   "balloon-rescue": memo(BalloonRescue),
   fishing: memo(Fishing),
+  garden: memo(Garden),
 };
 
 function App() {

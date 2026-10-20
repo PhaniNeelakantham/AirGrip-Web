@@ -3250,3 +3250,201 @@ button.game-card:hover {
     height: max(400px, calc(100svh - 300px));
   }
 }
+
+/* ---------- Garden Watering ---------- */
+.garden-area {
+  position: relative;
+  overflow: hidden;
+  height: min(540px, 66svh);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #8fdcff 0%, #c9f0ff 62%, #c9f0ff 100%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lift);
+}
+
+.garden-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.garden-sun {
+  fill: #ffd84d;
+  filter: drop-shadow(0 0 10px rgba(255, 216, 77, 0.7));
+}
+
+.garden-clouds ellipse {
+  fill: #ffffff;
+  opacity: 0.9;
+}
+
+.garden-ground {
+  fill: #7fd65a;
+}
+
+.garden-grass path {
+  fill: none;
+  stroke: #5fbf3c;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.garden-pipe {
+  fill: #9aa6b2;
+}
+
+.garden-tap-handle {
+  fill: #e85d5d;
+}
+
+.garden-tap-water {
+  fill: #4fc3f7;
+  transition: opacity 200ms ease;
+}
+
+.garden-pot {
+  fill: #d9774b;
+}
+
+.garden-pot-rim {
+  fill: #c4643a;
+}
+
+.garden-soil {
+  fill: #6b4a2b;
+}
+
+.garden-stem {
+  fill: none;
+  stroke: #43a047;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.garden-leaf {
+  fill: #66bb6a;
+}
+
+.garden-bloom {
+  transform: scale(0.2);
+  opacity: 0;
+  transition: transform 600ms cubic-bezier(0.2, 1.5, 0.4, 1), opacity 300ms ease;
+}
+
+.garden-bloom.is-open {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.garden-petal {
+  fill: var(--petal);
+  stroke: rgba(0, 0, 0, 0.08);
+}
+
+.garden-stream {
+  fill: none;
+  stroke: #4fc3f7;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 8 6;
+  animation: garden-flow 0.4s linear infinite;
+  transition: opacity 150ms ease;
+}
+
+@keyframes garden-flow {
+  to { stroke-dashoffset: -14; }
+}
+
+.garden-can {
+  fill: #2fa4d9;
+}
+
+.garden-can-shine {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 3;
+}
+
+.garden-can-water {
+  fill: #8fe0ff;
+}
+
+.garden-can-handle {
+  fill: none;
+  stroke: #1f7fb0;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.garden-can-spout,
+.garden-can-rose {
+  fill: #1f7fb0;
+}
+
+.garden-tip {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 96px);
+  padding: 10px 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.garden-tip.is-bloom {
+  background: #fff3c4;
+  color: #6b4a00;
+}
+
+.squeeze-meter.garden-meter {
+  top: 70px;
+}
+
+.garden-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(76, 175, 80, 0.35);
+  border-top: 2px solid #43a047;
+  border-bottom: 2px solid #43a047;
+}
+
+.garden-meter .squeeze-fill {
+  background: linear-gradient(0deg, #4fc3f7, #2fa4d9);
+}
+
+.garden-meter .squeeze-fill.is-in-zone {
+  background: linear-gradient(0deg, #66bb6a, #43a047);
+}
+
+.reel-progress.garden-progress {
+  bottom: 14px;
+}
+
+.reel-progress.garden-progress span {
+  background: linear-gradient(90deg, #4fc3f7, #2fa4d9);
+}
+
+.reel-progress.garden-progress span.is-growing {
+  background: linear-gradient(90deg, #a5d6a7, #43a047);
+}
+
+@media (min-width: 900px) {
+  .garden-area {
+    height: max(400px, calc(100svh - 300px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-stream {
+    animation: none;
+  }
+}

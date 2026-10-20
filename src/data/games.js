@@ -1,4 +1,4 @@
-import { CircleDot, Compass, Fish, Rocket } from "lucide-react";
+import { CircleDot, Compass, Fish, Rocket, Sprout } from "lucide-react";
 
 // Game catalog. Only games with `playable: true` have been built so far.
 // level: "easy", "medium" or "hard" -- the Games menu groups them that way.
@@ -22,6 +22,17 @@ export const GAMES = [
     minutes: 2,
     tint: "sky",
     icon: CircleDot,
+    level: "easy",
+    playable: true,
+  },
+  {
+    id: "garden",
+    name: "Garden Watering",
+    desc: "Squeeze steadily to fill the can, then tilt your hand down to water the flower.",
+    trains: "Grip control + wrist",
+    minutes: 2,
+    tint: "butter",
+    icon: Sprout,
     level: "easy",
     playable: true,
   },
