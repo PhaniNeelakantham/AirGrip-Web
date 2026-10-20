@@ -68,7 +68,7 @@ export default function Home({ sessions, onNavigate, onStartSession, onOpenBasel
         <div className="banner tint-butter" role="status">
           <Wrench size={18} aria-hidden="true" />
           <span>
-            <strong>Developer mode</strong>
+            <strong>{'Developer mode  '}  </strong>
             <button className="link-btn" onClick={() => setDevMode(false)}>
               Turn off
             </button>
