@@ -33,7 +33,7 @@ export const GAMES = [
     minutes: 2,
     tint: "butter",
     icon: Sprout,
-    level: "easy",
+    level: "medium",
     playable: true,
   },
   {

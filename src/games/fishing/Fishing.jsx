@@ -263,7 +263,7 @@ export default function Fishing({
       stage: "aim",
       t: 0,
       fish: FISH[0],
-      aim: fishAim(0),
+      aim: fishAim(0), // the rod starts straight ahead
       aimHold: 0,
       lifted: false,
       wait: 0,
@@ -339,7 +339,7 @@ export default function Fishing({
     const nextFish = () => {
       g.index++;
       g.fish = FISH[g.index];
-      g.aim = fishAim(g.index);
+      g.aim = fishAim(clamp(g.yawF, -1.15, 1.15)); // away from where the rod points now
       g.aimHold = 0;
       g.lifted = false;
       g.hookHold = 0;

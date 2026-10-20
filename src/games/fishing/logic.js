@@ -22,11 +22,12 @@ export function toReach(deg, fullPos, fullNeg) {
   return deg >= 0 ? deg / fullPos : deg / fullNeg;
 }
 
-// Where each fish waits, as reach left/right: never straight ahead (so
-// aiming always takes a movement), alternating sides.
-export function fishAim(index) {
-  const side = index % 2 === 0 ? 1 : -1;
+// Where the next fish waits, as reach left/right: never straight ahead (so
+// aiming always takes a movement), and on the other side from where the rod
+// is pointing now, so the player always has to move to reach it.
+export function fishAim(rodReach = 0) {
   const far = 0.4 + Math.random() * 0.35;
+  const side = Math.abs(rodReach) < 0.1 ? (Math.random() < 0.5 ? 1 : -1) : rodReach > 0 ? -1 : 1;
   return side * far;
 }
 
