@@ -96,8 +96,7 @@ export default function SettingsSheet({ demoMode, onClose, onOpenBaseline }) {
           <span>
             <strong>Developer mode</strong>
             <span className="sheet-switch-note">
-              Play every game right away on the real device, without the baseline assessment. Games use
-              default ranges, so they won't be tuned to anyone. For testing.
+              For Dev testing
             </span>
           </span>
           <button className="switch" role="switch" aria-checked={devMode} onClick={() => setDevMode(!devMode)} />
