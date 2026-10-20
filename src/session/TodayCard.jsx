@@ -1,9 +1,10 @@
 import { Check, Clock, Play } from "lucide-react";
-import { PLAN_MINUTES, TODAY_PLAN, isPlanDoneToday } from "./plan";
+import { isPlanDoneToday, planFrom, planMinutes, usePlanIds } from "./plan";
 
 // Home screen's main action: start (or redo) today's guided session.
 export default function TodayCard({ demoMode, onStart }) {
   const done = isPlanDoneToday(demoMode);
+  const plan = planFrom(usePlanIds()); // the games picked last time
 
   return (
     <section className={`today-card${done ? " is-done" : ""}`} aria-label="Today's session">
@@ -11,7 +12,7 @@ export default function TodayCard({ demoMode, onStart }) {
         <div>
           <div className="today-label">{done ? "Done for today" : "Today's session"}</div>
           <div className="today-title">
-            {done ? "Nice work! You finished today's exercises." : `${TODAY_PLAN.length} short exercises for your hand and wrist`}
+            {done ? "Nice work! You finished today's exercises." : `${plan.length} short exercises for your hand and wrist`}
           </div>
         </div>
         {done && (
@@ -22,7 +23,7 @@ export default function TodayCard({ demoMode, onStart }) {
       </div>
 
       <div className="today-steps" aria-hidden="true">
-        {TODAY_PLAN.map(({ gameId, game }) => {
+        {plan.map(({ gameId, game }) => {
           const Icon = game.icon;
           return (
             <span key={gameId} className={`today-step tint-${game.tint}`} title={game.name}>
@@ -31,7 +32,7 @@ export default function TodayCard({ demoMode, onStart }) {
           );
         })}
         <span className="today-time">
-          <Clock size={14} /> about {PLAN_MINUTES} min
+          <Clock size={14} /> about {planMinutes(plan)} min
         </span>
       </div>
 

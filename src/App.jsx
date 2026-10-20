@@ -13,7 +13,7 @@ import Fishing from "./games/fishing/Fishing";
 import Garden from "./games/garden/Garden";
 import SessionIntro from "./session/SessionIntro";
 import SessionSummary from "./session/SessionSummary";
-import { TODAY_PLAN, markPlanDone, newSessionId } from "./session/plan";
+import { markPlanDone, newSessionId, planFrom, savePlanIds } from "./session/plan";
 import BaselineAssessment from "./baseline/BaselineAssessment";
 import { getBaseline } from "./data/baseline";
 import { sessionHand, useHand } from "./data/hand";
@@ -103,8 +103,10 @@ function App() {
     window.scrollTo({ top: 0 });
     if (done && thenSession) setGuided({ stage: "intro" });
   };
-  const startSession = () => {
-    setGuided({ stage: "game", id: newSessionId(), step: 0, results: [], startedAt: Date.now() });
+  // ids: the games picked on the session screen, in order.
+  const startSession = (ids) => {
+    savePlanIds(ids);
+    setGuided({ stage: "game", plan: planFrom(ids), id: newSessionId(), step: 0, results: [], startedAt: Date.now() });
     window.scrollTo({ top: 0 });
   };
   const endSession = useCallback(() => {
@@ -114,8 +116,8 @@ function App() {
   }, []);
   const nextStep = useCallback(
     (result) => {
-      const results = [...guided.results, { gameId: TODAY_PLAN[guided.step].gameId, result }];
-      const isLast = guided.step + 1 >= TODAY_PLAN.length;
+      const results = [...guided.results, { gameId: guided.plan[guided.step].gameId, result }];
+      const isLast = guided.step + 1 >= guided.plan.length;
       if (isLast && !getGuest()) markPlanDone(demoMode);
       setGuided({
         ...guided,
@@ -130,12 +132,13 @@ function App() {
   );
   const guidedStage = guided?.stage;
   const guidedStep = guided?.step;
+  const guidedPlan = guided?.plan;
   const sessionStep = useMemo(
     () =>
       guidedStage === "game"
-        ? { index: guidedStep, total: TODAY_PLAN.length, nextName: TODAY_PLAN[guidedStep + 1]?.game.name }
+        ? { index: guidedStep, total: guidedPlan.length, nextName: guidedPlan[guidedStep + 1]?.game.name }
         : null,
-    [guidedStage, guidedStep]
+    [guidedStage, guidedStep, guidedPlan]
   );
 
   if (baselineOpen) {
@@ -183,7 +186,7 @@ function App() {
   }
 
   if (guidedStage === "game") {
-    const StepGame = GAME_SCREENS[TODAY_PLAN[guidedStep].gameId];
+    const StepGame = GAME_SCREENS[guidedPlan[guidedStep].gameId];
     return (
       <main className="screen screen--game">
         <StepGame

@@ -3448,3 +3448,149 @@ button.game-card:hover {
     animation: none;
   }
 }
+
+/* ---------- session: pick the games ---------- */
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 18px 0 14px;
+}
+
+.pick-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px;
+  border: 2px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.pick-tile:hover {
+  transform: translateY(-2px);
+}
+
+.pick-tile.is-on {
+  border-color: var(--icon);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--icon) 22%, transparent), var(--shadow);
+}
+
+/* Each game's picture: a bright color of its own (same in light and dark
+   mode) with a big white icon. */
+.pick-art {
+  --art-from: #8b7cf6;
+  --art-to: #5b4fd6;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.35), transparent 50%),
+    linear-gradient(135deg, var(--art-from), var(--art-to));
+  color: #ffffff;
+  transition: opacity 160ms ease, filter 160ms ease;
+}
+
+.pick-art svg {
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
+}
+
+.tint-lavender .pick-art { --art-from: #9d8cff; --art-to: #5b4fd6; }
+.tint-sky .pick-art { --art-from: #5cb8ff; --art-to: #2f6fe0; }
+.tint-butter .pick-art { --art-from: #ffd166; --art-to: #f59e0b; }
+.tint-peach .pick-art { --art-from: #ffa47a; --art-to: #ef5a3c; }
+.tint-mint .pick-art { --art-from: #4ade80; --art-to: #0e9f6e; }
+
+.pick-tile:not(.is-on) .pick-art {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.pick-name {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.pick-meta {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.pick-level {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.pick-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: transparent;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.pick-tile.is-on .pick-badge {
+  border-color: var(--icon);
+  background: var(--icon);
+  color: var(--surface);
+}
+
+.pick-order {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.pick-order li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pick-order li > span:nth-child(2) {
+  flex: 1;
+}
+
+.pick-order strong {
+  color: var(--ink);
+}
+
+.pick-order-num {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
