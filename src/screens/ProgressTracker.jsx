@@ -8,7 +8,6 @@ import {
   Microscope,
   Repeat,
   RotateCw,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -163,7 +162,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
           </ScoreRing>
           <div className="score-text">
             <span className={`pill pill--${band.tone}`}>
-              <Sparkles size={15} aria-hidden="true" /> {band.label}
+              {band.label}
             </span>
             <p className="score-message">{band.message}</p>
           </div>

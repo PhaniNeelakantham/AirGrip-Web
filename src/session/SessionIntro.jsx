@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bluetooth, Check, Clock, Play, Sparkles, X } from "lucide-react";
+import { Bluetooth, Check, Clock, Play, X } from "lucide-react";
 import { MIN_PLAN_GAMES, PLAYABLE_GAMES, getPlanIds, planFrom, planMinutes } from "./plan";
 
 const LEVEL_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
@@ -27,7 +27,7 @@ export default function SessionIntro({ demoMode, connectionState, onStart, onExi
       <section className="hero session-hero">
         <div className="hero-text">
           <div className="hero-label">
-            <Sparkles size={15} aria-hidden="true" /> Build your session
+            Build your session
           </div>
           <div className="hero-value">
             {plan.length} {plan.length === 1 ? "game" : "games"} · about {planMinutes(plan)} min
