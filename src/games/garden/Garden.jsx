@@ -382,6 +382,14 @@ export default function Garden({
             g.index++;
             g.growth = 0;
             g.zone = newZone(g.zone);
+            // Zero the tilt for the next flower: wherever the hand rests now
+            // counts as level -- unless it's still tipped down to pour, which
+            // would make "level" a pour.
+            if (g.tilt < POUR_START) {
+              if (!demoMode) center.current = toAngles(reading.current);
+              demo.pitch = 0;
+              g.tilt = 0;
+            }
             g.stage = "fill";
             g.zoneSeenThisFill = false;
             g.t = 0;

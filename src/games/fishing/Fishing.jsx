@@ -339,7 +339,16 @@ export default function Fishing({
     const nextFish = () => {
       g.index++;
       g.fish = FISH[g.index];
-      g.aim = fishAim(clamp(g.yawF, -1.15, 1.15)); // away from where the rod points now
+      // The rod still points at the fish just caught: put the next one on the
+      // other side.
+      g.aim = fishAim(g.aim);
+      // Zero the wrist angles for the next fish: wherever the hand rests now
+      // counts as straight ahead and level (this also clears any slow drift).
+      if (!demoMode) center.current = toAngles(reading.current);
+      demo.yaw = 0;
+      demo.pitch = 0;
+      demo.roll = 0;
+      g.yawF = 0;
       g.aimHold = 0;
       g.lifted = false;
       g.hookHold = 0;
