@@ -3090,6 +3090,7 @@ button.game-card:hover {
   max-width: 480px;
   max-height: 92svh;
   overflow-y: auto;
+  overscroll-behavior: contain; /* scrolling the panel never scrolls the page */
   padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
   border-radius: 28px 28px 0 0;
   background: var(--bg);

@@ -30,6 +30,20 @@ export default function SettingsSheet({ demoMode, onClose, onOpenBaseline, onSwi
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Freeze the page behind the panel while it's open (pinning the body works
+  // on iPhones too, where hiding overflow alone doesn't stop scrolling), then
+  // put it back exactly where it was.
+  useEffect(() => {
+    const y = window.scrollY;
+    const body = document.body.style;
+    const before = { position: body.position, top: body.top, width: body.width, overflow: body.overflow };
+    Object.assign(body, { position: "fixed", top: `-${y}px`, width: "100%", overflow: "hidden" });
+    return () => {
+      Object.assign(body, before);
+      window.scrollTo(0, y);
+    };
+  }, []);
+
   return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>
       <div
