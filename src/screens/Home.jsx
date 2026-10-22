@@ -104,7 +104,14 @@ export default function Home({
 
       <header className="screen-header">
         <div className="eyebrow">{greeting()}</div>
-        <h1 className="title">{guest ? "Welcome!" : active ? `Welcome back, ${active.name}` : "Welcome back"}</h1>
+        {/* Greet by name -- but not "Welcome back, Me" for the default profile. */}
+        <h1 className="title">
+          {guest
+            ? "Welcome!"
+            : active && active.name.trim().toLowerCase() !== "me"
+              ? `Welcome back, ${active.name}`
+              : "Welcome back"}
+        </h1>
       </header>
 
       {/* No baseline yet: lead with it. Done: a small summary under today's session. */}
