@@ -148,9 +148,6 @@ export default function SettingsSheet({ demoMode, onClose, onOpenBaseline, onSwi
         <label className="switch-row sheet-switch">
           <span>
             <strong>Developer mode</strong>
-            <span className="sheet-switch-note">
-              For Dev testing
-            </span>
           </span>
           <button className="switch" role="switch" aria-checked={devMode} onClick={() => setDevMode(!devMode)} />
         </label>
