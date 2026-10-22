@@ -91,7 +91,6 @@ export default function ProfileForm({ profile = null, onClose, onCreated, onDele
         value={fields.name}
         maxLength={24}
         autoComplete="off"
-        placeholder="e.g. Grandma Rose"
         onChange={(e) => set({ name: e.target.value })}
       />
       <div className="form-label">Pick a color</div>
