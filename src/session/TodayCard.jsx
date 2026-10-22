@@ -1,10 +1,10 @@
-import { Check, Clock, Play } from "lucide-react";
-import { isPlanDoneToday, planFrom, planMinutes, usePlanIds } from "./plan";
+import { Check, Play } from "lucide-react";
+import { MIN_PLAN_GAMES, PLAYABLE_GAMES, isPlanDoneToday } from "./plan";
 
-// Home screen's main action: start (or redo) today's guided session.
+// Home screen's main action: build (or redo) today's guided session. The
+// player picks the games on the next screen, so this shows all of them.
 export default function TodayCard({ demoMode, onStart }) {
   const done = isPlanDoneToday(demoMode);
-  const plan = planFrom(usePlanIds()); // the games picked last time
 
   return (
     <section className={`today-card${done ? " is-done" : ""}`} aria-label="Today's session">
@@ -12,7 +12,7 @@ export default function TodayCard({ demoMode, onStart }) {
         <div>
           <div className="today-label">{done ? "Done for today" : "Today's session"}</div>
           <div className="today-title">
-            {done ? "Nice work! You finished today's exercises." : `${plan.length} short exercises for your hand and wrist`}
+            {done ? "Nice work! You finished today's exercises." : "Choose your games for today"}
           </div>
         </div>
         {done && (
@@ -23,21 +23,19 @@ export default function TodayCard({ demoMode, onStart }) {
       </div>
 
       <div className="today-steps" aria-hidden="true">
-        {plan.map(({ gameId, game }) => {
+        {PLAYABLE_GAMES.map((game) => {
           const Icon = game.icon;
           return (
-            <span key={gameId} className={`today-step tint-${game.tint}`} title={game.name}>
+            <span key={game.id} className={`today-step tint-${game.tint}`} title={game.name}>
               <Icon size={18} />
             </span>
           );
         })}
-        <span className="today-time">
-          <Clock size={14} /> about {planMinutes(plan)} min
-        </span>
+        <span className="today-time">pick {MIN_PLAN_GAMES} or more</span>
       </div>
 
       <button className={`btn btn-block btn-big ${done ? "btn-secondary" : "btn-primary"}`} onClick={onStart}>
-        <Play size={18} fill="currentColor" aria-hidden="true" /> {done ? "Do it again" : "Start today's session"}
+        <Play size={18} fill="currentColor" aria-hidden="true" /> {done ? "Do another session" : "Build today's session"}
       </button>
     </section>
   );

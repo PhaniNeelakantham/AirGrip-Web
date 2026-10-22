@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from "react";
 import { GAMES } from "../data/games";
 
 // Today's guided session: the games the player picked (at least 2), in the
@@ -28,7 +27,6 @@ export const planFrom = (ids) =>
 export const planMinutes = (plan) => plan.reduce((sum, s) => sum + (s.game?.minutes ?? 2), 0);
 
 let savedIds; // undefined = not loaded yet
-const listeners = new Set();
 
 export function getPlanIds() {
   if (savedIds === undefined) {
@@ -50,17 +48,6 @@ export function savePlanIds(ids) {
   } catch {
     // Storage blocked: remembered for this visit only.
   }
-  listeners.forEach((fn) => fn());
-}
-
-function subscribe(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
-
-// The saved choice, as session steps.
-export function usePlanIds() {
-  return useSyncExternalStore(subscribe, getPlanIds);
 }
 
 // "Done for today" is remembered per local calendar day. Real sessions
