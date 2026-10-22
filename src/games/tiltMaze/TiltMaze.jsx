@@ -279,8 +279,12 @@ export default function TiltMaze({
     if (phoneMode) {
       // The phone reports tilt the standard way round; the baseline's
       // directions were learned for how the AquaGrip sits in the hand.
-      tune.pitchUpSign = 1;
+      // Up/down is flipped so the phone works like a tray: tip the top edge
+      // down and the ball rolls up the screen, toward the low side (left /
+      // right already work that way). The up and down ranges swap with it.
+      tune.pitchUpSign = -1;
       tune.rollRightSign = 1;
+      tune.full = { ...tune.full, up: tune.full.down, down: tune.full.up };
     }
     const full = tune.full;
     const readTilt = (dt) => {
