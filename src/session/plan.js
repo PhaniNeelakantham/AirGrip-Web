@@ -1,9 +1,10 @@
 import { GAMES } from "../data/games";
+import { activeKey } from "../data/profiles";
 
 // Today's guided session: the games the player picked (at least 2), in the
-// order they picked them. The choice is remembered in this browser.
+// order they picked them. Each person's choice is remembered on this device.
 export const MIN_PLAN_GAMES = 2;
-const PLAN_KEY = "aquagrip.planGames.v1";
+const planKey = () => activeKey("planGames");
 export const DEFAULT_PLAN_IDS = ["squeeze-pop", "tilt-maze", "balloon-rescue", "fishing"];
 
 // What each game is for, shown in the session.
@@ -26,34 +27,36 @@ export const planFrom = (ids) =>
 
 export const planMinutes = (plan) => plan.reduce((sum, s) => sum + (s.game?.minutes ?? 2), 0);
 
-let savedIds; // undefined = not loaded yet
+const savedIds = {}; // per person (storage key -> ids)
 
 export function getPlanIds() {
-  if (savedIds === undefined) {
+  const key = planKey();
+  if (!(key in savedIds)) {
     try {
-      const parsed = JSON.parse(localStorage.getItem(PLAN_KEY));
+      const parsed = JSON.parse(localStorage.getItem(key));
       const ids = Array.isArray(parsed) ? parsed.filter(isPlayable) : [];
-      savedIds = ids.length >= MIN_PLAN_GAMES ? ids : DEFAULT_PLAN_IDS.filter(isPlayable);
+      savedIds[key] = ids.length >= MIN_PLAN_GAMES ? ids : DEFAULT_PLAN_IDS.filter(isPlayable);
     } catch {
-      savedIds = DEFAULT_PLAN_IDS.filter(isPlayable);
+      savedIds[key] = DEFAULT_PLAN_IDS.filter(isPlayable);
     }
   }
-  return savedIds;
+  return savedIds[key];
 }
 
 export function savePlanIds(ids) {
-  savedIds = ids.filter(isPlayable);
+  const key = planKey();
+  savedIds[key] = ids.filter(isPlayable);
   try {
-    localStorage.setItem(PLAN_KEY, JSON.stringify(savedIds));
+    localStorage.setItem(key, JSON.stringify(savedIds[key]));
   } catch {
     // Storage blocked: remembered for this visit only.
   }
 }
 
-// "Done for today" is remembered per local calendar day. Real sessions
-// are kept in this browser; demo sessions only for this visit, since demo
-// data is never saved.
-const DONE_KEY = "aquagrip.planDoneDate";
+// "Done for today" is remembered per person and local calendar day. Real
+// sessions are kept on this device; demo sessions only for this visit, since
+// demo data is never saved.
+const doneKey = () => activeKey("planDone");
 let demoDoneDate = null;
 
 const todayKey = () => {
@@ -64,7 +67,7 @@ const todayKey = () => {
 export function isPlanDoneToday(demoMode) {
   if (demoMode) return demoDoneDate === todayKey();
   try {
-    return localStorage.getItem(DONE_KEY) === todayKey();
+    return localStorage.getItem(doneKey()) === todayKey();
   } catch {
     return false;
   }
@@ -76,7 +79,7 @@ export function markPlanDone(demoMode) {
     return;
   }
   try {
-    localStorage.setItem(DONE_KEY, todayKey());
+    localStorage.setItem(doneKey(), todayKey());
   } catch {
     // Storage blocked: Home just won't show "done for today".
   }

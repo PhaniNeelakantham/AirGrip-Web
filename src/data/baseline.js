@@ -1,16 +1,17 @@
 import { useSyncExternalStore } from "react";
 import { saveCalibration } from "./gripCalibration";
 import { getHand, subscribeHand } from "./hand";
+import { activeKey } from "./profiles";
 import { getGuest, getGuestRun, subscribeGuest } from "./guest";
 
 // The player's starting point from the Baseline assessment: grip range
 // (relaxed + comfortable max, psi) and wrist range in each direction (degrees
 // from "level": tilt = pitch, turn = roll, wave side to side = yaw; yaw
 // fields are missing on baselines taken before it was added), plus which way the sensor reads for "up" and "right" on
-// this player's device. One per hand. Real results are saved in this
-// browser; demo results only for this visit, since demo data is never saved.
-// (The right hand keeps the original key, from before hands existed.)
-const keyFor = (hand) => (hand === "left" ? "aquagrip.baseline.left.v1" : "aquagrip.baseline.v1");
+// this player's device. One per person and hand. Real results are saved on
+// this device; demo results only for this visit, since demo data is never
+// saved.
+const keyFor = (hand) => activeKey(`baseline.${hand}`);
 const demoBaseline = {};
 const saved = {};
 const guestBaseline = { run: -1, byHand: {} }; // Guest mode: memory only
@@ -29,15 +30,16 @@ const isValid = (b) =>
 export function getBaseline(demoMode, hand = getHand()) {
   if (demoMode) return demoBaseline[hand] ?? null;
   if (getGuest()) return guestStore()[hand] ?? null;
-  if (!(hand in saved)) {
+  const key = keyFor(hand);
+  if (!(key in saved)) {
     try {
       const parsed = JSON.parse(localStorage.getItem(keyFor(hand)));
-      saved[hand] = isValid(parsed) ? parsed : null;
+      saved[key] = isValid(parsed) ? parsed : null;
     } catch {
-      saved[hand] = null;
+      saved[key] = null;
     }
   }
-  return saved[hand];
+  return saved[key];
 }
 
 export function saveBaseline(demoMode, baseline, hand = getHand()) {
@@ -46,7 +48,7 @@ export function saveBaseline(demoMode, baseline, hand = getHand()) {
   } else if (getGuest()) {
     guestStore()[hand] = baseline;
   } else {
-    saved[hand] = baseline;
+    saved[keyFor(hand)] = baseline;
     try {
       localStorage.setItem(keyFor(hand), JSON.stringify(baseline));
     } catch {

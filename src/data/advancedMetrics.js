@@ -175,8 +175,13 @@ const CSV_COLUMNS = [
   ...ADVANCED_METRICS.map((m) => [CSV_NAMES[m.key] ?? m.key, (s) => s[m.key]]),
 ];
 
-export function sessionsToCsv(sessions) {
+// `person` (optional): the profile the sessions belong to, so a therapist
+// can tell whose file it is.
+export function sessionsToCsv(sessions, person = null) {
+  const columns = person
+    ? [["person", () => person.name], ["age_range", () => person.ageRange ?? ""], ...CSV_COLUMNS]
+    : CSV_COLUMNS;
   const cell = (v) => (v === null || v === undefined ? "" : String(v).replace(/[",\n]/g, " "));
-  const rows = sessions.map((s) => CSV_COLUMNS.map(([, get]) => cell(get(s))).join(","));
-  return [CSV_COLUMNS.map(([name]) => name).join(","), ...rows].join("\n");
+  const rows = sessions.map((s) => columns.map(([, get]) => cell(get(s))).join(","));
+  return [columns.map(([name]) => name).join(","), ...rows].join("\n");
 }

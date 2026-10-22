@@ -17,6 +17,9 @@ import { markPlanDone, newSessionId, planFrom, savePlanIds } from "./session/pla
 import BaselineAssessment from "./baseline/BaselineAssessment";
 import { getBaseline } from "./data/baseline";
 import { sessionHand, useHand } from "./data/hand";
+import { getProfiles, sessionOwner, useProfiles } from "./data/profiles";
+import WhoIsPlaying from "./profiles/WhoIsPlaying";
+import ProfileForm from "./profiles/ProfileForm";
 import { getGuest } from "./data/guest";
 import { getDevMode } from "./data/devMode";
 
@@ -51,10 +54,25 @@ function App() {
   const sensor = useAquaGripSensor({ mock: demoMode, transport });
   const phoneMode = !demoMode && transport === "phone";
   const savedSessions = useSavedSessions();
-  // Each hand has its own progress. (Demo data isn't tied to a hand.)
+  // Each person, and each of their hands, has its own progress. (Demo data
+  // isn't tied to anyone.)
   const hand = useHand();
-  const handSessions = useMemo(() => savedSessions.filter((s) => sessionHand(s) === hand), [savedSessions, hand]);
-  const sessions = demoMode ? mockSessions : handSessions;
+  const { profiles, active } = useProfiles();
+  const mySessions = useMemo(
+    () => savedSessions.filter((s) => sessionOwner(s, profiles) === active?.id && sessionHand(s) === hand),
+    [savedSessions, profiles, active, hand]
+  );
+  const sessions = demoMode ? mockSessions : mySessions;
+
+  // ---- People: "Who's playing?", adding and editing a profile ----
+  // Opens on start when 2+ people share this device, or to welcome a brand-new
+  // install. view: "who" | "add" | "edit"
+  const [people, setPeople] = useState(() => (getProfiles().length !== 1 ? { view: "who", onStart: true } : null));
+  const closePeople = () => {
+    setPeople(null);
+    setTab("home");
+    window.scrollTo({ top: 0 });
+  };
 
   const navigate = (next) => {
     setTab(next);
@@ -145,6 +163,38 @@ function App() {
         : null,
     [guidedStage, guidedStep, guidedPlan]
   );
+
+  if (people && !baselineOpen) {
+    const backToWho = () => setPeople(getProfiles().length === 0 || people.onStart ? { view: "who", onStart: people.onStart } : null);
+    return (
+      <main className="screen">
+        {people.view === "who" && (
+          <WhoIsPlaying
+            onDone={closePeople}
+            onAdd={() => setPeople({ view: "add", onStart: people.onStart })}
+            onClose={people.onStart ? null : closePeople}
+          />
+        )}
+        {people.view === "add" && (
+          <ProfileForm
+            onClose={() => (getProfiles().length && active ? closePeople() : backToWho())}
+            onBaseline={() => {
+              closePeople();
+              openBaseline();
+            }}
+          />
+        )}
+        {people.view === "edit" && active && (
+          <ProfileForm
+            key={active.id}
+            profile={active}
+            onClose={closePeople}
+            onDeleted={() => setPeople({ view: "who", onStart: true })}
+          />
+        )}
+      </main>
+    );
+  }
 
   if (baselineOpen) {
     return (
@@ -239,6 +289,8 @@ function App() {
             sessions={sessions}
             onNavigate={navigate}
             onStartSession={openSession}
+            onSwitchPerson={() => setPeople({ view: "who" })}
+            onEditProfile={() => setPeople({ view: "edit" })}
             onOpenBaseline={openBaseline}
             connectionState={sensor.connectionState}
             demoMode={demoMode}

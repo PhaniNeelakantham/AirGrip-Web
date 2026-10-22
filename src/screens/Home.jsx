@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Gamepad2, Hand, RotateCw, Settings, TrendingUp } from "lucide-react";
 import { baselineForRange, improvementScore, percentChange, summarize } from "../data/scoring";
-import { WEEKLY_GOAL, currentStreak, greeting, scoreBand, statusText, weekOverview } from "../data/insights";
+import { currentStreak, greeting, scoreBand, statusText, weekOverview } from "../data/insights";
+import { useProfiles, weeklyGoalOf } from "../data/profiles";
+import Avatar from "../profiles/Avatar";
 import { GAMES } from "../data/games";
 import DemoBanner from "../components/DemoBanner";
 import InstallCard from "../components/InstallCard";
@@ -17,7 +19,18 @@ import { useGuest } from "../data/guest";
 import { setDevMode, useDevMode } from "../data/devMode";
 import { Wrench } from "lucide-react";
 
-export default function Home({ sessions, onNavigate, onStartSession, onOpenBaseline, connectionState, demoMode }) {
+export default function Home({
+  sessions,
+  onNavigate,
+  onStartSession,
+  onOpenBaseline,
+  onSwitchPerson,
+  onEditProfile,
+  connectionState,
+  demoMode,
+}) {
+  const { active } = useProfiles();
+  const WEEKLY_GOAL = weeklyGoalOf(active); // this person's goal
   const baseline = useBaseline(demoMode);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const guest = useGuest() && !demoMode;
@@ -48,17 +61,30 @@ export default function Home({ sessions, onNavigate, onStartSession, onOpenBasel
     <>
       <div className="topbar">
         <div className="topbar-actions">
-          <button className="status-chip" onClick={() => onNavigate("games")}>
-            <span className={`status-dot${connected ? " is-on" : ""}`} aria-hidden="true" />
-            {statusText(connectionState, demoMode)}
-          </button>
+          <div className="topbar-left">
+            {active && (
+              <button className="topbar-avatar" onClick={onSwitchPerson} aria-label={`${active.name}. Switch person`}>
+                <Avatar profile={active} size={40} />
+              </button>
+            )}
+            <button className="status-chip" onClick={() => onNavigate("games")}>
+              <span className={`status-dot${connected ? " is-on" : ""}`} aria-hidden="true" />
+              {statusText(connectionState, demoMode)}
+            </button>
+          </div>
           <button className="icon-btn topbar-gear" onClick={() => setSettingsOpen(true)} aria-label="Settings">
             <Settings size={20} aria-hidden="true" />
           </button>
         </div>
       </div>
       {settingsOpen && (
-        <SettingsSheet demoMode={demoMode} onClose={() => setSettingsOpen(false)} onOpenBaseline={onOpenBaseline} />
+        <SettingsSheet
+          demoMode={demoMode}
+          onClose={() => setSettingsOpen(false)}
+          onOpenBaseline={onOpenBaseline}
+          onSwitchPerson={onSwitchPerson}
+          onEditProfile={onEditProfile}
+        />
       )}
 
       <InstallCard />
@@ -78,7 +104,7 @@ export default function Home({ sessions, onNavigate, onStartSession, onOpenBasel
 
       <header className="screen-header">
         <div className="eyebrow">{greeting()}</div>
-        <h1 className="title">{guest ? "Welcome!" : "Welcome back"}</h1>
+        <h1 className="title">{guest ? "Welcome!" : active ? `Welcome back, ${active.name}` : "Welcome back"}</h1>
       </header>
 
       {/* No baseline yet: lead with it. Done: a small summary under today's session. */}

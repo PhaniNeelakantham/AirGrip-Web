@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Download, Info } from "lucide-react";
 import { ADVANCED_METRICS, METRIC_GROUPS, formatMetric, sessionsToCsv, tremorWords } from "../data/advancedMetrics";
+import { useProfiles } from "../data/profiles";
 import { averageOf, percentChange } from "../data/scoring";
 import { DeltaChip } from "./StatTile";
 import LineChart from "./LineChart";
@@ -43,16 +44,19 @@ function MetricTile({ metric, value, change }) {
 // Extra detail for patients who want to learn more and for therapists:
 // grip control, wrist steadiness, ranges, a trend chart, and a data export.
 export default function AdvancedDetails({ inRange, now, before, compare, allSessions, demoMode }) {
+  const { active } = useProfiles();
+  const person = demoMode ? null : active;
   const available = ADVANCED_METRICS.filter((m) => inRange.some((s) => Number.isFinite(s[m.key])));
   const [chartKey, setChartKey] = useState("tremorDeg");
   const chartMetric = available.find((m) => m.key === chartKey) ?? available[0];
 
   const download = () => {
-    const blob = new Blob([sessionsToCsv(allSessions)], { type: "text/csv" });
+    const blob = new Blob([sessionsToCsv(allSessions, person)], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `aquagrip-${demoMode ? "sample-" : ""}sessions-${new Date().toISOString().slice(0, 10)}.csv`;
+    const who = person ? `${person.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-` : "";
+    a.download = `aquagrip-${demoMode ? "sample-" : who}sessions-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

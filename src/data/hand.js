@@ -1,36 +1,24 @@
 import { useSyncExternalStore } from "react";
+import { getActiveProfile, getActiveId, subscribeProfiles, updateProfile } from "./profiles";
 
-// Which hand the player is training. Each hand keeps its own baseline, grip
+// Which hand the player is training. It belongs to the active profile (each
+// person trains their own hand). Each hand keeps its own baseline, grip
 // range and progress, since the device sits mirrored in the other hand.
-const HAND_KEY = "aquagrip.hand";
-let hand; // undefined = not loaded yet
-const listeners = new Set();
+let fallback = "right"; // only used before anyone is set up (e.g. a guest)
 
 export function getHand() {
-  if (hand === undefined) {
-    try {
-      hand = localStorage.getItem(HAND_KEY) === "left" ? "left" : "right";
-    } catch {
-      hand = "right";
-    }
-  }
-  return hand;
+  return getActiveProfile()?.hand ?? fallback;
 }
 
 export function setHand(next) {
-  hand = next === "left" ? "left" : "right";
-  try {
-    localStorage.setItem(HAND_KEY, hand);
-  } catch {
-    // Storage blocked: remembered for this visit only.
-  }
-  listeners.forEach((fn) => fn());
+  const hand = next === "left" ? "left" : "right";
+  const id = getActiveId();
+  if (id) updateProfile(id, { hand });
+  else fallback = hand;
 }
 
-export function subscribeHand(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
+// Changes when the hand changes or a different person is chosen.
+export const subscribeHand = subscribeProfiles;
 
 export function useHand() {
   return useSyncExternalStore(subscribeHand, getHand);

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { getHand } from "./hand";
 import { getGuest } from "./guest";
+import { getActiveId, getProfiles } from "./profiles";
 
 // Real session history, saved in this browser only (localStorage).
 // Demo/sample sessions are never written here.
@@ -21,6 +22,7 @@ const isValidSession = (s) =>
   numberOrNull(s.reps);
 
 function read() {
+  getProfiles(); // first, let older data move into its profile (see profiles.js)
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
     return Array.isArray(parsed)
@@ -63,12 +65,12 @@ function subscribe(fn) {
 
 // Games call this when a session ends. `session` needs: timestamp,
 // durationS, peakForcePsi, avgForcePsi, reps, rotationRangeDeg. It's
-// tagged with the hand being trained.
+// tagged with the person playing and the hand being trained.
 export function addSession(session) {
   if (getGuest()) return; // Guest mode keeps nothing
   const current = getSnapshot();
   const id = current.reduce((max, s) => Math.max(max, s.id ?? 0), 0) + 1;
-  write([...current, { hand: getHand(), ...session, id }].sort((a, b) => a.timestamp - b.timestamp));
+  write([...current, { profileId: getActiveId(), hand: getHand(), ...session, id }].sort((a, b) => a.timestamp - b.timestamp));
 }
 
 export function clearSessions() {

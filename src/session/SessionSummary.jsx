@@ -1,6 +1,7 @@
 import { Flame, House, PartyPopper, Timer, TrendingUp } from "lucide-react";
 import { GAMES } from "../data/games";
-import { WEEKLY_GOAL, currentStreak, weekOverview } from "../data/insights";
+import { currentStreak, weekOverview } from "../data/insights";
+import { useProfiles, weeklyGoalOf } from "../data/profiles";
 
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
@@ -26,6 +27,7 @@ function describe(gameId, r) {
 }
 
 export default function SessionSummary({ results, durationMs, sessions, demoMode, onHome, onProgress }) {
+  const WEEKLY_GOAL = weeklyGoalOf(useProfiles().active); // this person's goal
   const minutes = Math.max(1, Math.round(durationMs / 60000));
   const { sessionsThisWeek } = weekOverview(sessions);
   const streak = currentStreak(sessions);

@@ -1,12 +1,13 @@
 import { getHand } from "./hand";
+import { activeKey } from "./profiles";
 import { getGuest, getGuestRun } from "./guest";
 import { getDevMode } from "./devMode";
 
 // The player's grip range from the Baseline assessment: relaxed reading and
-// comfortable max, in psi, for each hand. Real calibration is saved in this
-// browser; demo calibration lives in memory only, since demo data is never
-// saved. (The right hand keeps the original key, from before hands existed.)
-const keyFor = (hand) => (hand === "left" ? "aquagrip.gripCalibration.left.v1" : "aquagrip.gripCalibration.v1");
+// comfortable max, in psi, for each person and hand. Real calibration is
+// saved on this device; demo calibration lives in memory only, since demo
+// data is never saved.
+const keyFor = (hand) => activeKey(`calibration.${hand}`);
 const demoCalibration = {};
 const saved = {};
 const guestCalibration = { run: -1, byHand: {} }; // Guest mode: memory only
@@ -26,15 +27,16 @@ const isValid = (c) =>
 export function getCalibration(demoMode, hand = getHand()) {
   if (demoMode) return demoCalibration[hand] ?? null;
   if (getGuest()) return guestStore()[hand] ?? null;
-  if (!(hand in saved)) {
+  const key = keyFor(hand);
+  if (!(key in saved)) {
     try {
       const parsed = JSON.parse(localStorage.getItem(keyFor(hand)));
-      saved[hand] = isValid(parsed) ? parsed : null;
+      saved[key] = isValid(parsed) ? parsed : null;
     } catch {
-      saved[hand] = null;
+      saved[key] = null;
     }
   }
-  return saved[hand];
+  return saved[key];
 }
 
 // Developer mode without a baseline: "relaxed" is the reading when the game
@@ -62,7 +64,7 @@ export function saveCalibration(demoMode, calibration, hand = getHand()) {
     guestStore()[hand] = calibration;
     return;
   }
-  saved[hand] = calibration;
+  saved[keyFor(hand)] = calibration;
   try {
     localStorage.setItem(keyFor(hand), JSON.stringify(calibration));
   } catch {

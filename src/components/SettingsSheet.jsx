@@ -5,6 +5,8 @@ import { setHand, useHand } from "../data/hand";
 import { useBaseline } from "../data/baseline";
 import { setGuest, useGuest } from "../data/guest";
 import { setDevMode, useDevMode } from "../data/devMode";
+import { useProfiles } from "../data/profiles";
+import Avatar from "../profiles/Avatar";
 
 const HANDS = [
   { id: "left", label: "Left hand" },
@@ -15,7 +17,8 @@ const HANDS = [
 // Guest mode for letting other people try the device.
 // Rendered on <body>: the animated screen it opens from would otherwise pin
 // this "fixed" sheet to the page instead of the window.
-export default function SettingsSheet({ demoMode, onClose, onOpenBaseline }) {
+export default function SettingsSheet({ demoMode, onClose, onOpenBaseline, onSwitchPerson, onEditProfile }) {
+  const { active } = useProfiles();
   const hand = useHand();
   const baseline = useBaseline(demoMode);
   const guest = useGuest();
@@ -42,6 +45,38 @@ export default function SettingsSheet({ demoMode, onClose, onOpenBaseline }) {
             <X size={22} aria-hidden="true" />
           </button>
         </div>
+
+        {active && (
+          <div className="sheet-profile">
+            <Avatar profile={active} size={52} />
+            <div className="sheet-profile-text">
+              <strong>{active.name}</strong>
+              <span>
+                Goal: {active.weeklyGoal} sessions a week{active.ageRange ? ` · ${active.ageRange}` : ""}
+              </span>
+            </div>
+            <div className="sheet-profile-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  onClose();
+                  onEditProfile();
+                }}
+              >
+                Edit profile
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  onClose();
+                  onSwitchPerson();
+                }}
+              >
+                Switch person
+              </button>
+            </div>
+          </div>
+        )}
 
         <h3 className="sheet-label">Which hand are you training?</h3>
         <div className="hand-choice" role="radiogroup" aria-label="Training hand">
