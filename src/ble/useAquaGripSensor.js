@@ -10,6 +10,7 @@ import {
   parseSerialLine,
 } from "./protocol";
 import { startMockReadings } from "./mockReadings";
+import { startPhoneMotion } from "./phoneMotion";
 
 // Placeholder until the first real sample arrives (not a measurement).
 export const ZERO_READING = { forcePsi: 0, qw: 1, qx: 0, qy: 0, qz: 0 };
@@ -66,6 +67,7 @@ export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
   const portRef = useRef(null); // USB port to reopen without the picker
   const serialRef = useRef(null); // { port, reader, piped } while USB is open
   const stopMockRef = useRef(null);
+  const stopPhoneRef = useRef(null); // "This phone" motion sensor, while on
   // Games read the newest sample from this ref every animation frame, so
   // they never wait for (or trigger) a React re-render to get sensor data.
   const readingRef = useRef(ZERO_READING);
@@ -219,6 +221,10 @@ export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
       stopMockRef.current();
       stopMockRef.current = null;
     }
+    if (stopPhoneRef.current) {
+      stopPhoneRef.current();
+      stopPhoneRef.current = null;
+    }
     if (deviceRef.current?.gatt?.connected) {
       deviceRef.current.gatt.disconnect();
     }
@@ -282,6 +288,30 @@ export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
       log("Demo stream started (sample data, no device).");
       setStatus("MOCK");
       setConnectionState("connected");
+      return;
+    }
+
+    if (transport === "phone") {
+      // The phone's own motion sensor (wrist games only, no grip).
+      stopPhoneRef.current?.();
+      stopPhoneRef.current = null;
+      try {
+        setConnectionState("connecting");
+        const stop = await startPhoneMotion(publish);
+        if (attempt !== attemptRef.current) {
+          stop(); // disconnected while starting
+          return;
+        }
+        stopPhoneRef.current = stop;
+        countersRef.current.mode = "phone";
+        setStatus("PHONE");
+        log("Using this phone's motion sensor (no grip sensor).");
+        setConnectionState("connected");
+      } catch (err) {
+        setError(errText(err));
+        log(`Phone motion: ${errText(err)}`);
+        setConnectionState("disconnected");
+      }
       return;
     }
 

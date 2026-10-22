@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Bluetooth, Crosshair, Usb } from "lucide-react";
+import { Bluetooth, Crosshair, Smartphone, Usb } from "lucide-react";
 import { angleDelta, toAngles } from "../ble/orientation";
 import { getCalibration } from "../data/gripCalibration";
 import { ZERO_READING } from "../ble/useAquaGripSensor";
 import ConnectionDetails from "./ConnectionDetails";
+import { phoneMotionSupported } from "../ble/phoneMotion";
 
 const MAX_METER_PSI = 12;
 const AXIS_RANGE_DEG = 90;
@@ -42,7 +43,7 @@ function AxisBar({ label, hint, degrees }) {
 const PLACEHOLDER_PSI = 0.5;
 const MAX_JUMP_PSI = 1.5;
 
-function LiveMeters({ reading, demoMode }) {
+function LiveMeters({ reading, demoMode, noGrip = false }) {
   const [center, setCenter] = useState({ pitch: 0, roll: 0, yaw: 0 });
   const [lowest, setLowest] = useState(null);
   const [prev, setPrev] = useState(null); // the previous believable reading
@@ -62,7 +63,7 @@ function LiveMeters({ reading, demoMode }) {
 
   return (
     <div className="meters">
-      <div>
+      <div hidden={noGrip}>
         <div className="meter-head">
           <span>Squeeze</span>
           <strong>{squeezePsi.toFixed(1)} psi</strong>
@@ -100,8 +101,19 @@ function TransportToggle({ transport, onChange }) {
         <button aria-pressed={transport === "usb"} onClick={() => onChange("usb")} disabled={!usbSupported}>
           <Usb size={16} aria-hidden="true" /> USB cable
         </button>
+        <button aria-pressed={transport === "phone"} onClick={() => onChange("phone")} disabled={!phoneMotionSupported()}>
+          <Smartphone size={16} aria-hidden="true" /> This phone
+        </button>
       </div>
-      {!usbSupported && <p className="transport-note">USB connection needs Chrome or Edge on a computer.</p>}
+      {!usbSupported && transport !== "phone" && (
+        <p className="transport-note">USB connection needs Chrome or Edge on a computer.</p>
+      )}
+      {transport === "phone" && (
+        <p className="transport-note">
+          No AquaGrip? Use this phone's motion sensor for the wrist game. Hold the phone flat in your hand, screen up.
+          Grip games need the AquaGrip.
+        </p>
+      )}
     </div>
   );
 }
@@ -110,13 +122,16 @@ export default function DevicePanel({ sensor, demoMode, onDemoModeChange, transp
   const { connectionState, reading, error, connect, disconnect } = sensor;
   const connected = connectionState === "connected";
   const usb = transport === "usb";
+  const phone = transport === "phone";
 
   const title = connected
     ? demoMode
       ? "Demo mode is on"
-      : usb
-        ? "AquaGrip connected by USB"
-        : "AquaGrip connected"
+      : phone
+        ? "Using this phone's motion sensor"
+        : usb
+          ? "AquaGrip connected by USB"
+          : "AquaGrip connected"
     : connectionState === "connecting"
       ? "Connecting…"
       : "No device connected";
@@ -124,18 +139,22 @@ export default function DevicePanel({ sensor, demoMode, onDemoModeChange, transp
   const sub = connected
     ? demoMode
       ? "Showing sample movement so you can explore."
-      : "Squeeze and turn your wrist. The meters will follow."
+      : phone
+        ? "Tilt and turn the phone in your hand. The bars will follow."
+        : "Squeeze and turn your wrist. The meters will follow."
     : demoMode
       ? "Try everything with sample data. No device needed."
-      : usb
-        ? "Plug the device into the computer, close the Arduino Serial Monitor, then tap Connect."
-        : "Tap Connect to play.";
+      : phone
+        ? "Tap Connect to use this phone's motion sensor. Wrist games only."
+        : usb
+          ? "Plug the device into the computer, close the Arduino Serial Monitor, then tap Connect."
+          : "Tap Connect to play.";
 
   return (
     <section className="card">
       <div className="device-head" aria-live="polite">
         <div className={`device-badge${connected ? " is-on" : ""}`}>
-          <Bluetooth size={24} aria-hidden="true" />
+          {phone && !demoMode ? <Smartphone size={24} aria-hidden="true" /> : <Bluetooth size={24} aria-hidden="true" />}
         </div>
         <div>
           <div className="device-title">{title}</div>
@@ -144,7 +163,7 @@ export default function DevicePanel({ sensor, demoMode, onDemoModeChange, transp
       </div>
 
       {!demoMode && <TransportToggle transport={transport} onChange={onTransportChange} />}
-      {connected && <LiveMeters reading={reading} demoMode={demoMode} />}
+      {connected && <LiveMeters reading={reading} demoMode={demoMode} noGrip={phone && !demoMode} />}
       {error && <p className="device-error">{error}</p>}
 
       <div className="device-actions">

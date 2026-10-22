@@ -3594,3 +3594,12 @@ button.game-card:hover {
   font-size: 12px;
   font-weight: 800;
 }
+
+.pick-tile.is-locked {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pick-tile.is-locked:hover {
+  transform: none;
+}

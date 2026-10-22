@@ -22,10 +22,12 @@ import { getDevMode } from "./data/devMode";
 
 const TRANSPORT_KEY = "aquagrip.transport";
 
-// "ble" (Bluetooth) or "usb" (cable, Chrome/Edge on a computer).
+// "ble" (Bluetooth), "usb" (cable, Chrome/Edge on a computer), or "phone"
+// (this phone's own motion sensor: wrist games only, no grip).
 function loadTransport() {
   try {
-    return localStorage.getItem(TRANSPORT_KEY) === "usb" ? "usb" : "ble";
+    const saved = localStorage.getItem(TRANSPORT_KEY);
+    return saved === "usb" || saved === "phone" ? saved : "ble";
   } catch {
     return "ble";
   }
@@ -47,6 +49,7 @@ function App() {
   const [demoMode, setDemoMode] = useState(false);
   const [transport, setTransport] = useState(loadTransport);
   const sensor = useAquaGripSensor({ mock: demoMode, transport });
+  const phoneMode = !demoMode && transport === "phone";
   const savedSessions = useSavedSessions();
   // Each hand has its own progress. (Demo data isn't tied to a hand.)
   const hand = useHand();
@@ -90,7 +93,9 @@ function App() {
   const openSession = () => {
     // The games are tuned from the baseline, so take it first if it's missing
     // (optional in Demo mode, which has default ranges).
-    if (!demoMode && !getDevMode() && !getBaseline(false)) {
+    // (Phone mode has no grip sensor for the baseline; its session screen
+    // explains which games it can play.)
+    if (!demoMode && !phoneMode && !getDevMode() && !getBaseline(false)) {
       setBaselineOpen({ thenSession: true });
       return;
     }
@@ -159,6 +164,7 @@ function App() {
       <main className="screen screen--game">
         <SessionIntro
           demoMode={demoMode}
+          phoneMode={phoneMode}
           connectionState={sensor.connectionState}
           onStart={startSession}
           onExit={endSession}
@@ -198,6 +204,7 @@ function App() {
           onExit={endSession}
           onReconnect={sensor.connect}
           onOpenBaseline={openBaseline}
+          phoneMode={phoneMode}
           sessionStep={sessionStep}
           sessionGroupId={guided.id}
           onNext={nextStep}
@@ -218,6 +225,7 @@ function App() {
           onExit={leaveGame}
           onReconnect={sensor.connect}
           onOpenBaseline={openBaseline}
+          phoneMode={phoneMode}
         />
       </main>
     );
@@ -238,6 +246,7 @@ function App() {
         )}
         {tab === "games" && (
           <GameMenu
+            phoneMode={phoneMode}
             sensor={sensor}
             demoMode={demoMode}
             onDemoModeChange={changeDemoMode}

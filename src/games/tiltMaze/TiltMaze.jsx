@@ -101,6 +101,7 @@ export default function TiltMaze({
   onExit,
   onReconnect,
   onOpenBaseline,
+  phoneMode = false, // driven by this phone's motion sensor instead of the AquaGrip
   sessionStep = null,
   sessionGroupId = null,
   onNext,
@@ -245,6 +246,7 @@ export default function TiltMaze({
       if (!demoMode) {
         addSession({
           game: "tilt-maze",
+          ...(phoneMode && { source: "phone" }),
           timestamp: Date.now(),
           durationS: timeS,
           peakForcePsi: null,
@@ -274,6 +276,12 @@ export default function TiltMaze({
 
     // Current tilt in degrees: x > 0 = right, y > 0 = down.
     const tune = tiltTuning(getBaseline(demoMode));
+    if (phoneMode) {
+      // The phone reports tilt the standard way round; the baseline's
+      // directions were learned for how the AquaGrip sits in the hand.
+      tune.pitchUpSign = 1;
+      tune.rollRightSign = 1;
+    }
     const full = tune.full;
     const readTilt = (dt) => {
       if (demoMode) {
@@ -347,7 +355,7 @@ export default function TiltMaze({
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [phase, demoMode, reading, lastDataAtRef, rects, draw, finish, link.pausedRef]);
+  }, [phase, demoMode, phoneMode, reading, lastDataAtRef, rects, draw, finish, link.pausedRef]);
 
   // After a reconnect the hand may have moved, so "level" is wherever it is now.
   const resumeAfterReconnect = () => {

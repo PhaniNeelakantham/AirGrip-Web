@@ -6,12 +6,15 @@ const LEVEL_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
 // Before a session: pick the games (at least 2). They're played in the order
 // they were picked, shown by the number on each tile.
-export default function SessionIntro({ demoMode, connectionState, onStart, onExit }) {
+export default function SessionIntro({ demoMode, phoneMode = false, connectionState, onStart, onExit }) {
   const connected = connectionState === "connected";
-  const [picked, setPicked] = useState(() => getPlanIds());
+  // With just a phone there's no grip sensor, so only wrist games can be picked.
+  const available = PLAYABLE_GAMES.filter((g) => !(phoneMode && g.needsGrip));
+  const [picked, setPicked] = useState(() => getPlanIds().filter((id) => available.some((g) => g.id === id)));
   const plan = planFrom(picked);
   const enough = plan.length >= MIN_PLAN_GAMES;
 
+  const tooFew = available.length < MIN_PLAN_GAMES;
   const toggle = (id) =>
     setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
@@ -41,11 +44,13 @@ export default function SessionIntro({ demoMode, connectionState, onStart, onExi
           const Icon = game.icon;
           const order = picked.indexOf(game.id);
           const on = order >= 0;
+          const locked = phoneMode && game.needsGrip;
           return (
             <button
               key={game.id}
-              className={`pick-tile tint-${game.tint}${on ? " is-on" : ""}`}
+              className={`pick-tile tint-${game.tint}${on ? " is-on" : ""}${locked ? " is-locked" : ""}`}
               aria-pressed={on}
+              disabled={locked}
               onClick={() => toggle(game.id)}
             >
               <span className="pick-art" aria-hidden="true">
@@ -55,7 +60,11 @@ export default function SessionIntro({ demoMode, connectionState, onStart, onExi
               <span className="pick-meta">
                 {game.trains} · {game.minutes} min
               </span>
-              {game.level && <span className="pick-level">{LEVEL_LABEL[game.level]}</span>}
+              {locked ? (
+                <span className="pick-level">Needs the AquaGrip</span>
+              ) : (
+                game.level && <span className="pick-level">{LEVEL_LABEL[game.level]}</span>
+              )}
               <span className="pick-badge" aria-hidden="true">
                 {on ? order + 1 : <Check size={16} strokeWidth={3} />}
               </span>
@@ -80,7 +89,13 @@ export default function SessionIntro({ demoMode, connectionState, onStart, onExi
         </ol>
       )}
 
-      {!demoMode && !connected && (
+      {phoneMode && tooFew && (
+        <p className="plan-note">
+          With just a phone you can play the wrist game (Tilt Maze) from the Games tab. A full session needs the AquaGrip
+          for the grip games.
+        </p>
+      )}
+      {!demoMode && !connected && !phoneMode && (
         <p className="plan-note">
           <Bluetooth size={16} aria-hidden="true" /> Have your AquaGrip on and nearby. Each exercise will help you connect.
         </p>
