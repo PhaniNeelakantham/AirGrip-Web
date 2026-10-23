@@ -201,7 +201,7 @@ export default function ProfileForm({ profile = null, onClose, onCreated, onDele
       {step === 1 && (
         <>
           <h1 className="title form-q">Which hand are you training?</h1>
-          <p className="subtitle">Hold the AquaGrip in this hand. You can switch anytime in Settings.</p>
+          <p className="subtitle">Hold the AirGrip in this hand. You can switch anytime in Settings.</p>
           <Choices big label="Hand" options={handOptions} value={fields.hand} onChange={(hand) => set({ hand })} />
           <button className="btn btn-primary btn-block btn-big form-next" onClick={() => setStep(2)}>
             Next

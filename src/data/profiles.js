@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-// People who use AquaGrip on this device. Everything personal -- baselines,
+// People who use AirGrip on this device. Everything personal -- baselines,
 // grip range, session picks, progress -- belongs to the active profile.
 // All of it is stored on this device only (localStorage); nothing is sent
 // anywhere unless the person exports their progress.

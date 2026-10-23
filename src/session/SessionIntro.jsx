@@ -61,7 +61,7 @@ export default function SessionIntro({ demoMode, phoneMode = false, connectionSt
                 {game.trains} · {game.minutes} min
               </span>
               {locked ? (
-                <span className="pick-level">Needs the AquaGrip</span>
+                <span className="pick-level">Needs the AirGrip</span>
               ) : (
                 game.level && <span className="pick-level">{LEVEL_LABEL[game.level]}</span>
               )}
@@ -91,13 +91,13 @@ export default function SessionIntro({ demoMode, phoneMode = false, connectionSt
 
       {phoneMode && tooFew && (
         <p className="plan-note">
-          With just a phone you can play the wrist game (Tilt Maze) from the Games tab. A full session needs the AquaGrip
+          With just a phone you can play the wrist game (Tilt Maze) from the Games tab. A full session needs the AirGrip
           for the grip games.
         </p>
       )}
       {!demoMode && !connected && !phoneMode && (
         <p className="plan-note">
-          <Bluetooth size={16} aria-hidden="true" /> Have your AquaGrip on and nearby. Each exercise will help you connect.
+          <Bluetooth size={16} aria-hidden="true" /> Have your AirGrip on and nearby. Each exercise will help you connect.
         </p>
       )}
       {demoMode && <p className="plan-note">Demo mode: this session won't be saved to your progress.</p>}

@@ -2,7 +2,10 @@ import { correctMount } from "./orientation";
 
 // Must match xiao_sensor_firmware_ble.ino exactly -- these UUIDs and the
 // byte layout below are the contract between the firmware and the app.
-export const DEVICE_NAME = "AquaGrip";
+export const DEVICE_NAME = "AirGrip";
+// The device used to be called AquaGrip; boards still running older
+// firmware advertise that name, so it's accepted too.
+export const DEVICE_NAMES = [DEVICE_NAME, "AquaGrip"];
 export const SERVICE_UUID = "a495ff10-c5b1-4b44-b512-1370f02d74de";
 export const DATA_CHAR_UUID = "a495ff11-c5b1-4b44-b512-1370f02d74de";
 export const STATUS_CHAR_UUID = "a495ff12-c5b1-4b44-b512-1370f02d74de";

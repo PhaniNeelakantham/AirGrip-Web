@@ -101,7 +101,7 @@ export default function TiltMaze({
   onExit,
   onReconnect,
   onOpenBaseline,
-  phoneMode = false, // driven by this phone's motion sensor instead of the AquaGrip
+  phoneMode = false, // driven by this phone's motion sensor instead of the AirGrip
   sessionStep = null,
   sessionGroupId = null,
   onNext,
@@ -278,7 +278,7 @@ export default function TiltMaze({
     const tune = tiltTuning(getBaseline(demoMode));
     if (phoneMode) {
       // The phone reports tilt the standard way round; the baseline's
-      // directions were learned for how the AquaGrip sits in the hand.
+      // directions were learned for how the AirGrip sits in the hand.
       // Up/down is flipped so the phone works like a tray: tip the top edge
       // down and the ball rolls up the screen, toward the low side (left /
       // right already work that way). The up and down ranges swap with it.
@@ -430,7 +430,7 @@ export default function TiltMaze({
               )}
               {demoMode && <p className="overlay-note">Demo mode: this game won't be saved to your progress.</p>}
               {!canStart && (
-                <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
+                <p className="overlay-note">Connect your AirGrip first, or turn on Demo mode to try it with the keyboard.</p>
               )}
               {canStart ? (
                 <button className="btn btn-primary btn-block" onClick={() => start(false)}>

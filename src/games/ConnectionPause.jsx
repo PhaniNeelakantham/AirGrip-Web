@@ -9,7 +9,7 @@ export default function ConnectionPause({ lost, silent = false, connecting, read
         <div className={`overlay-icon ${lost ? "tint-peach" : "tint-mint"}`}>
           {lost ? <BluetoothOff size={30} aria-hidden="true" /> : <BluetoothConnected size={30} aria-hidden="true" />}
         </div>
-        <h2>{silent ? "Waiting for the sensor" : lost ? "AquaGrip disconnected" : "Connected again"}</h2>
+        <h2>{silent ? "Waiting for the sensor" : lost ? "AirGrip disconnected" : "Connected again"}</h2>
         <p className="overlay-note">
           {silent
             ? "Still connected, but the motion sensor stopped sending. It usually restarts by itself in a few seconds. Hold still."

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const STALE_MS = 1500; // no data for this long counts as a lost link
 
-// Pauses a real-device game when the AquaGrip link drops or goes silent.
+// Pauses a real-device game when the AirGrip link drops or goes silent.
 // The game stays paused after the link returns until the player taps
 // Resume, so it never restarts while their hand is somewhere else.
 // Demo mode never pauses: it doesn't depend on the device.

@@ -430,7 +430,7 @@ export default function SqueezePop({
               )}
               {demoMode && <p className="overlay-note">Demo mode: this game won't be saved to your progress.</p>}
               {!canStart && (
-                <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
+                <p className="overlay-note">Connect your AirGrip first, or turn on Demo mode to try it with the keyboard.</p>
               )}
               {!hasCalibration ? (
                 <button className="btn btn-primary btn-block" onClick={onOpenBaseline}>

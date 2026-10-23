@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Bluetooth, Crosshair, Smartphone, Usb } from "lucide-react";
 import { angleDelta, toAngles } from "../ble/orientation";
 import { getCalibration } from "../data/gripCalibration";
-import { ZERO_READING } from "../ble/useAquaGripSensor";
+import { ZERO_READING } from "../ble/useAirGripSensor";
 import ConnectionDetails from "./ConnectionDetails";
 import { phoneMotionSupported } from "../ble/phoneMotion";
 
@@ -110,8 +110,8 @@ function TransportToggle({ transport, onChange }) {
       )}
       {transport === "phone" && (
         <p className="transport-note">
-          No AquaGrip? Use this phone's motion sensor for the wrist game. Hold the phone flat in your hand, screen up.
-          Grip games need the AquaGrip.
+          No AirGrip? Use this phone's motion sensor for the wrist game. Hold the phone flat in your hand, screen up.
+          Grip games need the AirGrip.
         </p>
       )}
     </div>
@@ -130,8 +130,8 @@ export default function DevicePanel({ sensor, demoMode, onDemoModeChange, transp
       : phone
         ? "Using this phone's motion sensor"
         : usb
-          ? "AquaGrip connected by USB"
-          : "AquaGrip connected"
+          ? "AirGrip connected by USB"
+          : "AirGrip connected"
     : connectionState === "connecting"
       ? "Connecting…"
       : "No device connected";

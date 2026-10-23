@@ -1,7 +1,7 @@
 import { fromAngles } from "./orientation";
 
 // "This phone" connection: the phone's own motion sensor stands in for the
-// AquaGrip's IMU, so the wrist games can be played holding just a phone
+// AirGrip's IMU, so the wrist games can be played holding just a phone
 // (flat in the palm, screen up, top edge pointing the way the fingers do).
 // There's no grip sensor, so the reading's pressure stays 0 and games that
 // need a squeeze stay locked in this mode.
@@ -10,7 +10,7 @@ import { fromAngles } from "./orientation";
 //   beta  = front/back tilt (top edge up = positive)       -> pitch (hand up)
 //   gamma = left/right tilt (right edge down = positive)   -> roll (turn right)
 //   alpha = compass-style turn (counterclockwise = positive) -> yaw (wave left)
-// Those are packed into the same quaternion the AquaGrip sends, so every
+// Those are packed into the same quaternion the AirGrip sends, so every
 // game reads them exactly like the real device.
 
 export const phoneMotionSupported = () =>

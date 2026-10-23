@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DEVICE_NAME,
+  DEVICE_NAMES,
   SERVICE_UUID,
   DATA_CHAR_UUID,
   STATUS_CHAR_UUID,
@@ -53,11 +54,11 @@ function freshCounters() {
 
 const hex4 = (n) => `0x${n.toString(16).padStart(4, "0")}`;
 
-// Talks to the AquaGrip ESP32 over Web Bluetooth or a USB cable (Web
+// Talks to the AirGrip ESP32 over Web Bluetooth or a USB cable (Web
 // Serial), or with mock: true generates a fake reading stream instead.
 // Every path exposes the exact same shape, so game/tracker code never needs
 // to know which one is active.
-export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
+export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
   const [connectionState, setConnectionState] = useState("disconnected"); // disconnected | connecting | connected
   const [reading, setReading] = useState(ZERO_READING);
   const [status, setStatus] = useState("");
@@ -334,7 +335,7 @@ export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
             port = granted[0];
             log("Using the USB port you picked before.");
           } else {
-            log("Choose the AquaGrip's USB port…");
+            log("Choose the AirGrip's USB port…");
             port = await navigator.serial.requestPort();
           }
           portRef.current = port;
@@ -370,7 +371,7 @@ export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
       return;
     }
 
-    // After a dropped link, reconnect to the same AquaGrip directly instead
+    // After a dropped link, reconnect to the same AirGrip directly instead
     // of making the player pick it from Chrome's device list again.
     const reusing = deviceRef.current !== null;
     try {
@@ -380,19 +381,19 @@ export function useAquaGripSensor({ mock = false, transport = "ble" } = {}) {
       if (!device) {
         log(`Looking for a device named "${DEVICE_NAME}"…`);
         device = await navigator.bluetooth.requestDevice({
-          filters: [{ name: DEVICE_NAME }],
+          filters: DEVICE_NAMES.map((name) => ({ name })),
           optionalServices: [SERVICE_UUID],
         });
         deviceRef.current = device;
         log(`Picked "${device.name ?? "unnamed device"}".`);
       } else {
-        log(`Reconnecting to "${device.name ?? "AquaGrip"}"…`);
+        log(`Reconnecting to "${device.name ?? "AirGrip"}"…`);
       }
       device.removeEventListener("gattserverdisconnected", onDrop);
       device.addEventListener("gattserverdisconnected", onDrop);
 
       const service = await connectWithRetry(device, log);
-      log("Found the AquaGrip service.");
+      log("Found the AirGrip service.");
 
       const dataChar = await service.getCharacteristic(DATA_CHAR_UUID);
       log("Found the sensor-data channel.");

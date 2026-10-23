@@ -27,7 +27,7 @@ export default function WhoIsPlaying({ onDone, onAdd, onClose }) {
           <span className="people-welcome-mark" aria-hidden="true">
             <UserRound size={40} />
           </span>
-          <h1 className="title">Welcome to AquaGrip</h1>
+          <h1 className="title">Welcome to AirGrip</h1>
           <p className="subtitle">Let's set up your profile. It takes about 30 seconds.</p>
           <button className="btn btn-primary btn-block btn-big" onClick={onAdd}>
             Get started

@@ -20,7 +20,7 @@ function GameCardBody({ game, locked }) {
             <Clock size={14} aria-hidden="true" /> {minutes} min
           </span>
           {locked ? (
-            <span className="soon">Needs the AquaGrip</span>
+            <span className="soon">Needs the AirGrip</span>
           ) : playable ? (
             <span className="play-badge">
               <Play size={13} fill="currentColor" aria-hidden="true" /> Play

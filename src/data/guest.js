@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-// Guest mode: someone tries AquaGrip on the real device and nothing is kept.
+// Guest mode: someone tries AirGrip on the real device and nothing is kept.
 // No sessions are saved, and their baseline lives in memory only until
 // "Next guest" (or Guest mode is turned off). The owner's saved data is
 // never touched. The switch itself is remembered so a page reload in the

@@ -156,7 +156,7 @@ export default function BaselineAssessment({
   const link = useDevicePause({ active: phase === "measure", demoMode, connectionState, lastDataAtRef });
   if (phase === "measure" && link.paused) {
     setPhase("intro");
-    setNotice("AquaGrip disconnected during the check. Reconnect, then start again.");
+    setNotice("AirGrip disconnected during the check. Reconnect, then start again.");
   }
 
   // Demo controls: Space squeezes, arrow keys tilt and turn.
@@ -387,7 +387,7 @@ export default function BaselineAssessment({
           </Ring>
           <h1 className="bl-title">Baseline assessment</h1>
           <p className="bl-sub">
-            About one minute. Hold the AquaGrip in your <strong>{hand} hand</strong>. We'll measure your grip and how
+            About one minute. Hold the AirGrip in your <strong>{hand} hand</strong>. We'll measure your grip and how
             far your wrist moves, so every game matches what you can do today.
           </p>
           <ol className="bl-steps">
@@ -407,9 +407,9 @@ export default function BaselineAssessment({
             </button>
           ) : (
             <>
-              <p className="bl-small">Turn on your AquaGrip and connect it first.</p>
+              <p className="bl-small">Turn on your AirGrip and connect it first.</p>
               <button className="bl-btn" onClick={onReconnect} disabled={connectionState === "connecting"}>
-                <Bluetooth size={18} aria-hidden="true" /> {connectionState === "connecting" ? "Connecting…" : "Connect AquaGrip"}
+                <Bluetooth size={18} aria-hidden="true" /> {connectionState === "connecting" ? "Connecting…" : "Connect AirGrip"}
               </button>
             </>
           )}

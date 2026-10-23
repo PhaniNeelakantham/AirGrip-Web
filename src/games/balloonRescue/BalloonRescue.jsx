@@ -556,7 +556,7 @@ export default function BalloonRescue({
                                 </p>
                             )}
                             {hasCalibration && !canStart && (
-                                <p className="overlay-note">Connect your AquaGrip first, or turn on Demo mode to try it with the keyboard.</p>
+                                <p className="overlay-note">Connect your AirGrip first, or turn on Demo mode to try it with the keyboard.</p>
                             )}
                             {!hasCalibration ? (
                                 <button className="btn btn-primary btn-block" onClick={onOpenBaseline}>

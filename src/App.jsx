@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
-import { useAquaGripSensor } from "./ble/useAquaGripSensor";
+import { useAirGripSensor } from "./ble/useAirGripSensor";
 import { mockSessions } from "./data/mockSessions";
 import { useSavedSessions } from "./data/sessionStore";
 import BottomNav from "./components/BottomNav";
@@ -51,7 +51,7 @@ function App() {
   // Always starts off: real device + this browser's saved history.
   const [demoMode, setDemoMode] = useState(false);
   const [transport, setTransport] = useState(loadTransport);
-  const sensor = useAquaGripSensor({ mock: demoMode, transport });
+  const sensor = useAirGripSensor({ mock: demoMode, transport });
   const phoneMode = !demoMode && transport === "phone";
   const savedSessions = useSavedSessions();
   // Each person, and each of their hands, has its own progress. (Demo data

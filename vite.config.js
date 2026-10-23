@@ -11,8 +11,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'AquaGrip',
-        short_name: 'AquaGrip',
+        name: 'AirGrip',
+        short_name: 'AirGrip',
         description: 'Fun hand and wrist exercises with progress you can see.',
         theme_color: '#1f2a6b',
         background_color: '#f3f5fa',

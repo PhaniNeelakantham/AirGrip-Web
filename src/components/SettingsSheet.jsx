@@ -127,7 +127,7 @@ export default function SettingsSheet({ demoMode, onClose, onOpenBaseline, onSwi
           ))}
         </div>
         <p className="sheet-note">
-          Hold the AquaGrip in this hand. Each hand keeps its own baseline and progress, so you can train
+          Hold the AirGrip in this hand. Each hand keeps its own baseline and progress, so you can train
           one or both.
         </p>
 
