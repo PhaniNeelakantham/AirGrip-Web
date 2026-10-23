@@ -29,6 +29,11 @@ import { useHand } from "../data/hand";
 import { useProfiles } from "../data/profiles";
 import { useGuest } from "../data/guest";
 import GuestBanner from "../components/GuestBanner";
+import { weeklyGoalOf } from "../data/profiles";
+import { getBaseline } from "../data/baseline";
+import ProgressChat from "../ai/ProgressChat";
+import { buildProgressSummary } from "../ai/progressSummary";
+import { MessageCircle } from "lucide-react";
 
 const ADVANCED_KEY = "aquagrip.advancedOpen";
 function loadAdvancedOpen() {
@@ -85,6 +90,21 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
   const { active } = useProfiles();
   const guest = useGuest() && !demoMode;
   const [rangeId, setRangeId] = useState("30d");
+  const [chatOpen, setChatOpen] = useState(false);
+  // What the AI helper is told: this person's numbers only (see progressSummary.js).
+  const aiSummary = useMemo(
+    () =>
+      chatOpen
+        ? buildProgressSummary({
+            sessions,
+            baseline: getBaseline(demoMode),
+            hand,
+            weeklyGoal: weeklyGoalOf(active),
+            demoMode,
+          })
+        : "",
+    [chatOpen, sessions, demoMode, hand, active]
+  );
   const range = RANGE_OPTIONS.find((r) => r.id === rangeId);
 
   const data = useMemo(() => {
@@ -149,6 +169,21 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
   return (
     <>
       {header}
+
+      {/* AI helper: explains these numbers in plain words. Not in Guest mode,
+          since a guest's play isn't saved and there's nothing to explain. */}
+      {!guest && (
+        <button className="ask-ai" onClick={() => setChatOpen(true)}>
+          <span className="ask-ai-mark" aria-hidden="true">
+            <MessageCircle size={18} />
+          </span>
+          <span className="ask-ai-text">
+            <strong>Ask about my progress</strong>
+            <span>Get your numbers explained in plain words</span>
+          </span>
+        </button>
+      )}
+      {chatOpen && <ProgressChat summary={aiSummary} demoMode={demoMode} onClose={() => setChatOpen(false)} />}
 
       <div className="segmented" role="group" aria-label="Time range">
         {RANGE_OPTIONS.map((opt) => (

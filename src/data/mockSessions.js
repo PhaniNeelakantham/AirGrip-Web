@@ -4,6 +4,10 @@
 // Replace with actual logged sessions once games are wired up.
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 140;
+// Which game each sample session was (picked from its own random stream,
+// so the sample numbers stay exactly as they were). Weighted toward the
+// games most people play.
+const SAMPLE_GAMES = ["squeeze-pop", "squeeze-pop", "tilt-maze", "tilt-maze", "garden", "balloon-rescue", "fishing"];
 
 function seededRandom(seed) {
   let s = seed;
@@ -16,6 +20,7 @@ function seededRandom(seed) {
 function generateMockSessions() {
   const rand = seededRandom(42);
   const rand2 = seededRandom(1337);
+  const rand3 = seededRandom(2024);
   const sessions = [];
   const now = Date.now();
   let id = 0;
@@ -43,6 +48,7 @@ function generateMockSessions() {
       const n2 = () => (rand2() - 0.5) * 2;
       sessions.push({
         id: id++,
+        game: SAMPLE_GAMES[Math.floor(rand3() * SAMPLE_GAMES.length)],
         timestamp: dayStart - s * 3600_000 - Math.floor(rand() * 3600_000),
         durationS,
         peakForcePsi,

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { useScrollLock } from "../hooks/useScrollLock";
 import { createPortal } from "react-dom";
 import { Check, Hand, ScanLine, X } from "lucide-react";
 import { setHand, useHand } from "../data/hand";
@@ -31,35 +32,7 @@ export default function SettingsSheet({ demoMode, onClose, onOpenBaseline, onSwi
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Freeze the page behind the panel while it's open (pinning the body works
-  // on iPhones too, where hiding overflow alone doesn't stop scrolling), then
-  // put it back exactly where it was.
-  const backdropRef = useRef(null);
-  const sheetRef = useRef(null);
-  useEffect(() => {
-    const y = window.scrollY;
-    const body = document.body.style;
-    const html = document.documentElement.style;
-    const before = { position: body.position, top: body.top, width: body.width, overflow: body.overflow };
-    const htmlOverflow = html.overflow;
-    Object.assign(body, { position: "fixed", top: `-${y}px`, width: "100%", overflow: "hidden" });
-    html.overflow = "hidden"; // some desktop browsers scroll <html>, not <body>
-    // A mouse wheel or finger over the dimmed area never scrolls anything;
-    // inside the panel, the panel itself scrolls (and stops at its ends).
-    const block = (e) => {
-      if (!sheetRef.current?.contains(e.target)) e.preventDefault();
-    };
-    const el = backdropRef.current;
-    el?.addEventListener("wheel", block, { passive: false });
-    el?.addEventListener("touchmove", block, { passive: false });
-    return () => {
-      el?.removeEventListener("wheel", block);
-      el?.removeEventListener("touchmove", block);
-      Object.assign(body, before);
-      html.overflow = htmlOverflow;
-      window.scrollTo(0, y);
-    };
-  }, []);
+  const { backdropRef, panelRef: sheetRef } = useScrollLock(); // freeze the page behind the panel
 
   return createPortal(
     <div className="sheet-backdrop" ref={backdropRef} onClick={onClose}>

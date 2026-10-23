@@ -1,11 +1,43 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+// On localhost, answer POST /api/ask the same way the Vercel function does
+// (api/ask.js), using GEMINI_API_KEY from .env.local -- a git-ignored file,
+// so the key never ends up in the repo or in the app the browser downloads.
+function localAiApi() {
+  return {
+    name: 'airgrip-local-ai-api',
+    configureServer(server) {
+      const env = loadEnv(server.config.mode, process.cwd(), '')
+      server.middlewares.use('/api/ask', async (req, res) => {
+        const send = (status, body) => {
+          res.statusCode = status
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify(body))
+        }
+        if (req.method !== 'POST') return send(405, { error: 'Use POST.' })
+        let raw = ''
+        for await (const chunk of req) raw += chunk
+        let body = {}
+        try {
+          body = JSON.parse(raw || '{}')
+        } catch {
+          return send(400, { error: 'Bad request.' })
+        }
+        const { askGemini } = await server.ssrLoadModule('/api/_lib/askGemini.js')
+        const { status, body: out } = await askGemini(body, env)
+        send(status, out)
+      })
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    localAiApi(),
     // Installable app: manifest + a service worker that caches the app for
     // offline use and quietly updates itself after each new deploy.
     VitePWA({
@@ -28,6 +60,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        navigateFallbackDenylist: [/^\/api\//], // the AI helper's server, never the cached app
       },
     }),
   ],
