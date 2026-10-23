@@ -179,7 +179,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
           </span>
           <span className="ask-ai-text">
             <strong>Ask about my progress</strong>
-            <span>Get your numbers explained in plain words</span>
+            <span>Have your data explained simply by AI</span>
           </span>
         </button>
       )}
