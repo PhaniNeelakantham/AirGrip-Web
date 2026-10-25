@@ -1,7 +1,6 @@
 import { useLayoutEffect, useState } from "react";
 
-// Width of an element, measured before the browser paints so a chart never
-// shows an empty first frame, then kept up to date as it resizes.
+// Width of an element, measured before the browser paints
 export function useElementWidth(ref) {
   const [width, setWidth] = useState(0);
   useLayoutEffect(() => {

@@ -3,8 +3,7 @@ import { currentStreak, scoreBand, weekOverview } from "../data/insights";
 import { ADVANCED_METRICS } from "../data/advancedMetrics";
 import { GAMES } from "../data/games";
 
-// What the AI helper is told about one person's progress: numbers, dates and
-// the game library only. No name, age range or other profile details.
+// Summary sent to the AI helper: numbers only, no profile details
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 60; // every game in this window is listed one by one
@@ -19,7 +18,7 @@ const weekday = (t) => new Date(t).toLocaleDateString("en-US", { weekday: "short
 const gameName = (id) => GAMES.find((g) => g.id === id)?.name ?? "Unknown game";
 const LEVEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
-// Longest run of days in a row with at least one game.
+// Longest run of days in a row with at least one game
 function longestStreak(sessions) {
   const days = [...new Set(sessions.map((s) => dayKey(s.timestamp)))].sort();
   let best = 0;
@@ -34,7 +33,7 @@ function longestStreak(sessions) {
   return best;
 }
 
-// One line per game: what it measured.
+// One line per game: what it measured
 function describeSession(s) {
   const parts = [
     s.peakForcePsi != null ? `best squeeze ${round(s.peakForcePsi)} psi` : null,
@@ -135,7 +134,7 @@ export function buildProgressSummary({ sessions, baseline, hand, weeklyGoal, dem
           (averageOf(mine, "rotationRangeDeg") !== null ? ` Average wrist range ${fmt(averageOf(mine, "rotationRangeDeg"), " degrees", 0)}.` : "")
       );
     }
-    // Counts worked out here (AI models are unreliable at counting long lists).
+    // Pre-counted totals (models miscount long lists)
     const tally = (list) => {
       const c = {};
       for (const s of list) c[gameName(s.game)] = (c[gameName(s.game)] ?? 0) + 1;
@@ -161,7 +160,7 @@ export function buildProgressSummary({ sessions, baseline, hand, weeklyGoal, dem
       const detail = describeSession(s);
       lines.push(`- ${dayKey(s.timestamp)} (${weekday(s.timestamp)}): ${gameName(s.game)}${detail ? ` -- ${detail}` : ""}`);
     }
-    // Older games, a month at a time.
+    // Older games, a month at a time
     const older = sessions.filter((s) => now - s.timestamp >= HISTORY_DAYS * DAY_MS);
     if (older.length) {
       const months = {};

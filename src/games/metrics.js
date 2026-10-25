@@ -1,17 +1,13 @@
-// Advanced measurements recorded during games, for the Progress screen's
-// "Advanced details". Grip values use the game's "level" (0 = relaxed,
-// 1 = comfortable max from the grip check); wrist values use degrees.
-// These describe trends for the player and their therapist; they are not
-// a medical diagnosis.
+// Advanced measurements recorded during games
 
 const round = (v, digits) => (v === null || !Number.isFinite(v) ? null : Number(v.toFixed(digits)));
 
 // ---------- grip: hold endurance, steadiness, release control ----------
 const HOLD_LEVEL = 0.5; // "holding" = at least half of the comfortable max
-const RELEASE_FROM = 0.25; // a squeeze must reach this before its release counts
+const RELEASE_FROM = 0.25; // a squeeze must reach this before its release
 const RELEASE_TO = 0.15; // released = back down to this
-const RELEASE_START_DROP = 0.85; // release starts once level falls below 85% of the squeeze's peak
-const UPTICK = 0.01; // a rise bigger than this during a release = squeezing back up
+const RELEASE_START_DROP = 0.85; // release starts once level falls below 85% of
+const UPTICK = 0.01; // a rise bigger than this during a release =
 const HOLD_SETTLE_S = 0.4; // ignore the start of a hold (still ramping up)
 const HOLD_TRIM_END_S = 0.3; // ...and its end (starting to let go)
 
@@ -24,8 +20,7 @@ export function createGripTracker() {
   let wobbleSumSq = 0; // squared leftovers, weighted by time
   let wobbleTime = 0;
 
-  // Wobble of one finished hold: trim the ramp-up and let-go, remove any slow
-  // drift with a straight-line fit, and keep only the shakiness left over.
+  // Wobble of one finished hold: trim the ramp-up and let-go
   const finishSegment = () => {
     const end = segmentT - HOLD_TRIM_END_S;
     const pts = segment.filter((p) => p.t > HOLD_SETTLE_S && p.t < end);
@@ -54,7 +49,7 @@ export function createGripTracker() {
 
   return {
     update(level, dt) {
-      // Hold endurance + steadiness while holding.
+      // Hold endurance + steadiness while holding
       if (level >= HOLD_LEVEL) {
         holdRun += dt;
         holdTime += dt;
@@ -66,7 +61,7 @@ export function createGripTracker() {
         holdRun = 0;
       }
 
-      // Release control.
+      // Release control
       if (release) {
         release.elapsed += dt;
         release.frames++;
@@ -94,7 +89,7 @@ export function createGripTracker() {
       const avg = (key) => (releases.length ? releases.reduce((s, r) => s + r[key], 0) / releases.length : null);
       return {
         holdBestS: round(holdBest, 1),
-        // Only meaningful with at least a second of holding.
+        // Only meaningful with at least a second of holding
         gripWobblePct: wobbleTime >= 1 ? round(wobble * 100, 1) : null,
         releaseTimeS: round(avg("timeS"), 2),
         releaseSmoothness: releases.length ? Math.round(avg("smooth") * 100) : null,
@@ -104,19 +99,14 @@ export function createGripTracker() {
 }
 
 // ---------- wrist: tremor amount and rhythm ----------
-// Keep only quick shakes (about 2.5-12 per second, where hand tremors occur)
-// with a 4th-order high-pass at 2.5 Hz and a 2nd-order low-pass at 12 Hz,
-// so slow, intentional wrist movement is almost completely removed.
-// The filters assume the device's 50 readings/second; at much slower rates
-// (e.g. the Bluetooth fallback) a 5-12 Hz tremor can't be measured, so
-// nothing is reported.
+// Band-pass ~2.5-12 Hz: keep quick shakes, drop deliberate movement
 const FS = 50;
-const ZERO_HYSTERESIS = 0.1; // degrees; ignore sign flips smaller than this (noise)
+const ZERO_HYSTERESIS = 0.1; // degrees; ignore sign flips smaller than this
 const MIN_SAMPLES = 150; // ~3 s of data
 const SETTLE_SAMPLES = 25; // let the filters settle before counting
-const RHYTHM_MIN_DEG = 0.3; // below this there's too little shake to time its rhythm
+const RHYTHM_MIN_DEG = 0.3; // below this there's too little shake to time its
 
-// RBJ audio-cookbook biquad coefficients.
+// RBJ audio-cookbook biquad coefficients
 function biquad(type, f0, q) {
   const w = (2 * Math.PI * f0) / FS;
   const cos = Math.cos(w);
@@ -137,7 +127,7 @@ function runBiquad(f, x) {
 }
 
 function axisBand() {
-  // Two high-pass stages (Butterworth 4th order) + one low-pass stage.
+  // Two high-pass stages + one low-pass stage
   return {
     stages: [biquad("high", 2.5, 0.5412), biquad("high", 2.5, 1.3066), biquad("low", 12, 0.7071)],
     primed: false,
@@ -149,7 +139,7 @@ function axisBand() {
 
 function stepAxis(a, value, counting) {
   if (!a.primed) {
-    // Start the filters at the current angle so the first sample isn't a big jump.
+    // Start the filters at the current angle so the first sample isn't a big jump
     for (const st of a.stages) st.x1 = st.x2 = 0;
     a.offset = value;
     a.primed = true;
@@ -163,8 +153,7 @@ function stepAxis(a, value, counting) {
   a.sign = sign;
 }
 
-// Feed it real sensor samples (not screen frames), with the seconds since
-// the previous sample.
+// Feed it real sensor samples, with the seconds since the previous sample
 export function createTremorTracker() {
   let pitch = axisBand();
   let roll = axisBand();
@@ -175,7 +164,7 @@ export function createTremorTracker() {
   return {
     add(angles, dt) {
       if (!(dt > 0) || dt > 0.25) {
-        // A gap in the data: restart the filters rather than see a jump as a shake.
+        // A gap in the data: restart the filters rather than see a jump as a shake
         const keep = (old) => ({ ...axisBand(), sumSq: old.sumSq, crossings: old.crossings });
         pitch = keep(pitch);
         roll = keep(roll);
@@ -205,8 +194,7 @@ export function createTremorTracker() {
   };
 }
 
-// Change in squeeze strength from the start of a round to the end, in
-// percentage points of the comfortable max (negative = weaker by the end).
+// Change in squeeze strength from the start of a round to the end
 export function fatiguePct(popPeaks) {
   if (popPeaks.length < 6) return null;
   const avg = (a) => a.reduce((s, v) => s + v, 0) / a.length;

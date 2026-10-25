@@ -1,5 +1,4 @@
-// Friendly, plain-language views of session history for the Home and
-// Progress screens (week view, streak, greeting, score wording).
+// Plain-language views of session history for Home
 import { countSessions } from "./scoring";
 
 export const WEEKLY_GOAL = 5;
@@ -24,7 +23,7 @@ function hasSessionOn(sessions, day) {
   return sessions.some((s) => s.timestamp >= start && s.timestamp < end);
 }
 
-// Monday-first week containing `now`.
+// Monday-first week containing `now`
 export function weekOverview(sessions, now = new Date()) {
   const today = startOfDay(now);
   const todayIndex = (today.getDay() + 6) % 7;
@@ -44,8 +43,7 @@ export function weekOverview(sessions, now = new Date()) {
   return { days, sessionsThisWeek };
 }
 
-// Consecutive days with a session, counting back from today (or from
-// yesterday, so a streak isn't "lost" before you've had a chance today).
+// Consecutive days with a session, counting back from today
 export function currentStreak(sessions, now = new Date()) {
   let day = startOfDay(now);
   if (!hasSessionOn(sessions, day)) day = addDays(day, -1);

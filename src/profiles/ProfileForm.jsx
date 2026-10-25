@@ -64,8 +64,7 @@ const handOptions = HANDS.map((h) => ({
 const goalOptions = WEEKLY_GOALS.map((n) => ({ id: n, label: `${n} times a week` }));
 const ageOptions = AGE_RANGES.map((a) => ({ id: a, label: a }));
 
-// Adding someone: one question per screen, big buttons, the extras skippable.
-// Editing: the same questions on one page, plus Delete.
+// Adding someone: one question per screen, big buttons, the extras skippable
 export default function ProfileForm({ profile = null, onClose, onCreated, onDeleted, onBaseline }) {
   const editing = profile !== null;
   const [fields, setFields] = useState(() => ({
@@ -75,7 +74,7 @@ export default function ProfileForm({ profile = null, onClose, onCreated, onDele
     weeklyGoal: profile?.weeklyGoal ?? DEFAULT_WEEKLY_GOAL,
     ageRange: profile?.ageRange ?? null,
   }));
-  const [step, setStep] = useState(0); // creating: 0 name, 1 hand, 2 goal, 3 age, 4 all set
+  const [step, setStep] = useState(0); // creating: 0 name, 1 hand, 2 goal, 3 age
   const [confirmDelete, setConfirmDelete] = useState(false);
   const set = (patch) => setFields((f) => ({ ...f, ...patch }));
   const named = fields.name.trim().length > 0;

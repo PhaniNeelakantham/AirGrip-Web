@@ -38,8 +38,7 @@ p {
   margin: 0;
 }
 
-/* Mobile-first phone column. On a laptop it floats on a soft backdrop,
-   like the phone mockups, instead of stretching into a desktop layout. */
+/* Mobile-first phone column */
 #root {
   max-width: 440px;
   margin: 0 auto;
@@ -1224,8 +1223,7 @@ p {
 .game-overlay {
   position: absolute;
   inset: 0;
-  /* Scrolls when the card is taller than the game area (small screens),
-     instead of hiding the bottom of it. */
+  /* Scrolls when the card is taller than the game area */
   display: flex;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -3243,11 +3241,10 @@ button.game-card:hover {
   margin-top: 2px;
 }
 
-/* Fishing on a laptop: shorter lake so it and the controls below fit in the
-   window without scrolling. */
+/* Fishing on a laptop: shorter lake so it */
 @media (min-width: 900px) {
   .fish-area {
-    /* window - page margins (48) - top padding (20) - game bar (64) - controls (~130) - bottom padding (32) */
+    /* window - page margins - top padding - game bar - controls - bottom padding */
     height: max(400px, calc(100svh - 300px));
   }
 }
@@ -3484,8 +3481,7 @@ button.game-card:hover {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--icon) 22%, transparent), var(--shadow);
 }
 
-/* Each game's picture: a bright color of its own (same in light and dark
-   mode) with a big white icon. */
+/* Each game's picture: a bright color of its own with a big white icon */
 .pick-art {
   --art-from: #8b7cf6;
   --art-to: #5b4fd6;

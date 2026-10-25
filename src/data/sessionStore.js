@@ -3,14 +3,12 @@ import { getHand } from "./hand";
 import { getGuest } from "./guest";
 import { getActiveId, getProfiles } from "./profiles";
 
-// Real session history, saved in this browser only (localStorage).
-// Demo/sample sessions are never written here.
+// Real session history, saved in this browser only
 const STORAGE_KEY = "aquagrip.sessions.v1";
 const listeners = new Set();
 let cache = null;
 
-// Each game records only what it measures: grip metrics are null for
-// wrist-only games, wrist range is null for grip-only games.
+// Each game records only what it measures
 const numberOrNull = (v) => v === null || Number.isFinite(v);
 const isValidSession = (s) =>
   s &&
@@ -22,7 +20,7 @@ const isValidSession = (s) =>
   numberOrNull(s.reps);
 
 function read() {
-  getProfiles(); // first, let older data move into its profile (see profiles.js)
+  getProfiles(); // first, let older data move into its profile
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
     return Array.isArray(parsed)
@@ -38,7 +36,7 @@ function write(sessions) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
   } catch {
-    // Storage blocked or full -- keep the in-memory copy for this visit.
+    // Storage blocked or full -- keep the in-memory copy for this visit
   }
   listeners.forEach((fn) => fn());
 }
@@ -63,9 +61,7 @@ function subscribe(fn) {
   };
 }
 
-// Games call this when a session ends. `session` needs: timestamp,
-// durationS, peakForcePsi, avgForcePsi, reps, rotationRangeDeg. It's
-// tagged with the person playing and the hand being trained.
+// Called by games when a session ends
 export function addSession(session) {
   if (getGuest()) return; // Guest mode keeps nothing
   const current = getSnapshot();

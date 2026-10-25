@@ -3,9 +3,7 @@ import { createPortal } from "react-dom";
 import { MessageCircle, Send, X } from "lucide-react";
 import { useScrollLock } from "../hooks/useScrollLock";
 
-// "Ask about my progress": a small chat that explains the Progress numbers in
-// plain language. Questions go to our server (/api/ask), which asks Google's
-// Gemini with only a numbers-only summary of this person's progress.
+// "Ask about my progress" chat; questions go to /api/ask (Gemini)
 
 const SUGGESTIONS = [
   "Am I getting stronger?",
@@ -31,7 +29,7 @@ function countQuestion() {
   try {
     localStorage.setItem(DAILY_KEY, JSON.stringify({ date: todayKey(), n: usedToday() + 1 }));
   } catch {
-    // Storage blocked: the server's limit still applies.
+    // Storage blocked: the server's limit still applies
   }
 }
 function hasConsent() {
@@ -42,7 +40,7 @@ function hasConsent() {
   }
 }
 
-// Gemini may answer with **bold** and "- " bullets; show those simply.
+// Gemini may answer with **bold** and "- " bullets; show those simply
 function Rich({ text }) {
   const inline = (line) =>
     line.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
@@ -94,8 +92,7 @@ export default function ProgressChat({ summary, demoMode, onClose }) {
       setMessages((m) => [...m, { role: "model", text: "That's all the questions for today. Come back tomorrow!", error: true }]);
       return;
     }
-    // Earlier answers give context; failed attempts and the question being
-    // retried are left out.
+    // History for context, minus failed attempts and the retried question
     const earlier = messages.filter((m) => !m.error);
     const history = (retry ? earlier.slice(0, -1) : earlier).map(({ role, text }) => ({ role, text }));
     setMessages((m) => (retry ? m.filter((x) => !x.error) : [...m, { role: "user", text: q }]));
@@ -145,7 +142,7 @@ export default function ProgressChat({ summary, demoMode, onClose }) {
     try {
       localStorage.setItem(CONSENT_KEY, "yes");
     } catch {
-      // Storage blocked: asked again next time.
+      // Storage blocked: asked again next time
     }
     setConsented(true);
   };

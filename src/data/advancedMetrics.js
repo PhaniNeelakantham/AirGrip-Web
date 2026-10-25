@@ -1,9 +1,4 @@
-// The measurements shown in Progress -> Advanced details. Each game records
-// what it can measure (see src/games/metrics.js); sessions without a value
-// are simply left out of that measurement's average.
-//
-// better: which direction is an improvement ("up", "down", or null = neither)
-// delta:  how change is shown: "percent" (relative) or "points" (difference)
+// The measurements shown in Progress -> Advanced details
 export const ADVANCED_METRICS = [
   {
     key: "holdBestS",
@@ -137,7 +132,7 @@ export function formatMetric(metric, value) {
   return `${metric.prefix ?? ""}${sign}${n.toFixed(metric.digits)}`;
 }
 
-// Plain-language label for the tremor amount, so the number has meaning.
+// Plain-language label for the tremor amount, so the number has meaning
 export function tremorWords(deg) {
   if (deg === null || !Number.isFinite(deg)) return null;
   if (deg < 0.3) return "Very steady";
@@ -146,8 +141,7 @@ export function tremorWords(deg) {
   return "Strong shake";
 }
 
-// Every saved session as a CSV a therapist can open in a spreadsheet.
-// Column names say what each value is and its unit.
+// Every saved session as a CSV a therapist can open in a spreadsheet
 const CSV_NAMES = {
   holdBestS: "hold_endurance_s",
   gripWobblePct: "grip_wobble_pct_of_max",
@@ -175,8 +169,7 @@ const CSV_COLUMNS = [
   ...ADVANCED_METRICS.map((m) => [CSV_NAMES[m.key] ?? m.key, (s) => s[m.key]]),
 ];
 
-// `person` (optional): the profile the sessions belong to, so a therapist
-// can tell whose file it is.
+// `person`: the profile the sessions belong to
 export function sessionsToCsv(sessions, person = null) {
   const columns = person
     ? [["person", () => person.name], ["age_range", () => person.ageRange ?? ""], ...CSV_COLUMNS]

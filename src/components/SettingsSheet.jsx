@@ -14,11 +14,7 @@ const HANDS = [
   { id: "right", label: "Right hand" },
 ];
 
-// Settings, opened from the gear on Home: the person playing, which hand
-// they train, and Developer mode. (Guest is
-// on the "Who's playing?" screen.)
-// Rendered on <body>: the animated screen it opens from would otherwise pin
-// this "fixed" sheet to the page instead of the window.
+// Settings sheet: profile, hand, Developer mode
 export default function SettingsSheet({ demoMode, onClose, onOpenBaseline, onSwitchPerson, onEditProfile }) {
   const { active } = useProfiles();
   const hand = useHand();

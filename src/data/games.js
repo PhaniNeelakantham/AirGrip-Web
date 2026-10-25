@@ -1,8 +1,6 @@
 import { CircleDot, Compass, Fish, Rocket, Sprout } from "lucide-react";
 
-// Game catalog. Only games with `playable: true` have been built so far.
-// level: "easy", "medium" or "hard" -- the Games menu groups them that way.
-// needsGrip: uses the grip sensor, so it can't be played with just a phone.
+// Game catalog
 export const GAMES = [
   {
     id: "tilt-maze",

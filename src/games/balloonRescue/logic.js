@@ -1,15 +1,14 @@
-// Rules for Balloon Rescue. Positions are normalized: x runs 0..1 across the
-// play area's width, y runs 0..1 down its height.
+// Rules for Balloon Rescue
 export const PUMP_SECONDS = 15; // time to fill the balloon
 export const PUMP_GAIN = 0.16; // fill added per pump (squeeze or Space press)
-export const PUMP_DECAY = 0.02; // fill leaked per second, so you can't stop pumping
+export const PUMP_DECAY = 0.02; // fill leaked per second
 export const FLY_SECONDS = 30;
 export const LIVES = 3;
 export const HIT_GRACE = 1.2; // seconds of invulnerability after a hit
 export const BALLOON_Y = 0.82;
 export const BALLOON_R = 0.07; // as a fraction of the area's width
 
-// Asteroids arrive faster and quicker the longer you last (progress 0..1).
+// Asteroids arrive faster and quicker the longer you last
 export function spawnDelay(progress) {
     return 0.95 - 0.5 * progress;
 }
@@ -29,7 +28,7 @@ export function createAsteroid(id, progress) {
     };
 }
 
-// Moves an asteroid. Returns true once it is off the bottom of the screen.
+// Moves an asteroid
 export function stepAsteroid(a, dt) {
     a.y += a.vy * dt;
     a.x += a.vx * dt;
@@ -37,7 +36,7 @@ export function stepAsteroid(a, dt) {
     return a.y > 1.12;
 }
 
-// Circle hit test in pixels (width and height differ, so normalize first).
+// Circle hit test in pixels
 export function hitsBalloon(a, balloonX, w, h, scale = 1) {
     const dx = (a.x - balloonX) * w;
     const dy = (a.y - BALLOON_Y) * h;

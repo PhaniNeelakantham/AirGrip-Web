@@ -1,8 +1,6 @@
 import { defineConfig, minimal2023Preset } from "@vite-pwa/assets-generator/config";
 
-// Generates the app icons from the logo: `npm run icons`.
-// Maskable/Apple icons get padding on the brand navy so Android's circle or
-// squircle crop never cuts into the logo.
+// Generates the app icons from the logo: `npm run icons`
 export default defineConfig({
   headLinkOptions: { preset: "2023" },
   preset: {

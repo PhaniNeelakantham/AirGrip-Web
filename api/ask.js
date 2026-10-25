@@ -1,11 +1,8 @@
 import { askGemini } from "./_lib/askGemini.js";
 
-// Vercel serverless function: POST /api/ask { question, history, summary }.
-// The Gemini key comes from the GEMINI_API_KEY environment variable set in
-// the Vercel project (never from the app's code).
+// Vercel serverless function: POST /api/ask { question, history, summary }
 
-// Best-effort limit per visitor, so one person can't use up the free quota.
-// (Serverless instances are short-lived, so the app also limits per device.)
+// Best-effort limit per visitor, so one person can't use up the free quota
 const WINDOW_MS = 60 * 60 * 1000;
 const MAX_PER_WINDOW = 30;
 const seen = new Map();
@@ -19,7 +16,7 @@ function allowed(ip) {
   return true;
 }
 
-// Room for both models' attempts (12 s each) on Vercel.
+// Room for both models' attempts on Vercel
 export const maxDuration = 30;
 
 export default async function handler(req, res) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-// Progress ring that eases from its previous value to the new one.
+// Progress ring that eases from its previous value to the new one
 export default function ScoreRing({
   value,
   max = 100,
@@ -13,8 +13,7 @@ export default function ScoreRing({
   const [shown, setShown] = useState(0);
 
   useEffect(() => {
-    // Two frames so the starting offset is painted before it changes,
-    // otherwise the CSS transition has nothing to animate from.
+    // Two frames so the starting offset is painted before it changes
     let inner;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => setShown(value));

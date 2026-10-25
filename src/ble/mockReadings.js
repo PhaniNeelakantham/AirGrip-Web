@@ -1,7 +1,6 @@
 import { fromAngles } from "./orientation";
 
-// Fake reading stream so the UI can be built and tested without the ESP32.
-// Each axis wobbles at its own speed so all three meters move independently.
+// Fake reading stream so the UI can be built and tested without the ESP32
 export function startMockReadings(onReading, intervalMs = 20) {
   let t = 0;
   const id = setInterval(() => {

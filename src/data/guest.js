@@ -1,13 +1,9 @@
 import { useSyncExternalStore } from "react";
 
-// Guest mode: someone tries AirGrip on the real device and nothing is kept.
-// No sessions are saved, and their baseline lives in memory only until
-// "Next guest" (or Guest mode is turned off). The owner's saved data is
-// never touched. The switch itself is remembered so a page reload in the
-// middle of a demo stays in Guest mode.
+// Guest mode: someone tries AirGrip on the real device and nothing is kept
 const GUEST_KEY = "aquagrip.guest";
 let guest; // undefined = not loaded yet
-let run = 0; // bumps for each new guest, which forgets the last one's baseline
+let run = 0; // bumps for each new guest
 const listeners = new Set();
 const notify = () => listeners.forEach((fn) => fn());
 
@@ -31,7 +27,7 @@ export function setGuest(on) {
     if (guest) localStorage.setItem(GUEST_KEY, "on");
     else localStorage.removeItem(GUEST_KEY);
   } catch {
-    // Storage blocked: remembered for this visit only.
+    // Storage blocked: remembered for this visit only
   }
   notify();
 }
@@ -50,6 +46,6 @@ export function useGuest() {
   return useSyncExternalStore(subscribeGuest, getGuest);
 }
 
-// Results-card line for a game that wasn't saved.
+// Results-card line for a game that wasn't saved
 export const notSavedText = (demoMode) =>
   demoMode ? "Demo game, not saved to your progress." : "Guest game, not saved to anyone's progress.";

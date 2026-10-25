@@ -13,7 +13,7 @@ import {
 import { startMockReadings } from "./mockReadings";
 import { startPhoneMotion } from "./phoneMotion";
 
-// Placeholder until the first real sample arrives (not a measurement).
+// Placeholder until the first real sample arrives
 export const ZERO_READING = { forcePsi: 0, qw: 1, qx: 0, qy: 0, qz: 0 };
 
 const PACKET_BYTES = 20;
@@ -28,9 +28,7 @@ const errText = (err) => (err instanceof Error ? err.message : String(err));
 
 const CONNECT_ATTEMPTS = 3;
 
-// Android often drops a brand-new BLE link a moment after it opens (the
-// infamous "GATT error 133"), surfacing as "GATT Server is disconnected"
-// while looking up services. A short pause and another try usually works.
+// Android often drops a brand-new BLE link a moment after it opens
 async function connectWithRetry(device, log) {
   for (let attempt = 1; ; attempt++) {
     try {
@@ -54,10 +52,7 @@ function freshCounters() {
 
 const hex4 = (n) => `0x${n.toString(16).padStart(4, "0")}`;
 
-// Talks to the AirGrip ESP32 over Web Bluetooth or a USB cable (Web
-// Serial), or with mock: true generates a fake reading stream instead.
-// Every path exposes the exact same shape, so game/tracker code never needs
-// to know which one is active.
+// Talks to the AirGrip ESP32 over Web Bluetooth or a USB cable
 export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
   const [connectionState, setConnectionState] = useState("disconnected"); // disconnected | connecting | connected
   const [reading, setReading] = useState(ZERO_READING);
@@ -69,19 +64,16 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
   const serialRef = useRef(null); // { port, reader, piped } while USB is open
   const stopMockRef = useRef(null);
   const stopPhoneRef = useRef(null); // "This phone" motion sensor, while on
-  // Games read the newest sample from this ref every animation frame, so
-  // they never wait for (or trigger) a React re-render to get sensor data.
+  // Games read the newest sample from this ref every animation frame
   const readingRef = useRef(ZERO_READING);
   // When the newest sample arrived; games use it to notice a silent link
-  // (Android can take several seconds to report a dropped connection).
   const lastDataAtRef = useRef(0);
 
-  // Diagnostics: what actually arrives over Bluetooth, step by step. Kept in
-  // a ref (updated per packet) and copied to state twice a second for the UI.
+  // Diagnostics: what actually arrives over Bluetooth, step by step
   const countersRef = useRef(freshCounters());
   const logRef = useRef([]);
   const pollRef = useRef(null);
-  const attemptRef = useRef(0); // bumps on every connect, so stale timers from an earlier attempt do nothing
+  const attemptRef = useRef(0); // bumps on every connect
   const [diagnostics, setDiagnostics] = useState({ ...freshCounters(), rateHz: 0, lastAgoS: null, log: [] });
 
   const log = useCallback((msg) => {
@@ -121,7 +113,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
     pollRef.current = null;
   }, []);
 
-  // Every packet, from live updates or direct reads, goes through here.
+  // Every packet, from live updates or direct reads, goes through here
   const handlePacket = useCallback(
     (dv, via) => {
       const c = countersRef.current;
@@ -144,7 +136,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
     [publish, stopPolling, log]
   );
 
-  // USB: one text line from the firmware's serial output.
+  // USB: one text line from the firmware's serial output
   const handleSerialLine = useCallback(
     (line) => {
       const parsed = parseSerialLine(line);
@@ -166,8 +158,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
     [publish, log]
   );
 
-  // Close the USB port. Order matters: cancel the reader, let the pipe
-  // finish, then close the port (it can't close while still being read).
+  // Close the USB port
   const closeSerial = useCallback(async () => {
     const s = serialRef.current;
     serialRef.current = null;
@@ -184,9 +175,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
       const reader = decoder.readable.getReader();
       serialRef.current = { port, reader, piped };
       let buffer = "";
-      // We start listening partway through whatever the board is printing,
-      // so the first line is usually cut off (e.g. "4.71,..." from
-      // "14.71,..."), which would look like a real, very low pressure.
+      // We start listening partway through whatever the board is printing
       let firstLine = true;
       try {
         for (;;) {
@@ -204,7 +193,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
       } catch (err) {
         if (attempt === attemptRef.current) log(`USB read stopped: ${errText(err)}`);
       }
-      // Still the active attempt => the stream ended on its own (unplugged).
+      // Still the active attempt => the stream ended on its own
       if (attempt === attemptRef.current) {
         await closeSerial();
         portRef.current = null; // a replugged board is a new port object
@@ -216,7 +205,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
   );
 
   const disconnect = useCallback(() => {
-    attemptRef.current++; // cancel pending checks and mark USB closes as intentional
+    attemptRef.current++; // cancel pending checks and mark USB closes as
     stopPolling();
     if (stopMockRef.current) {
       stopMockRef.current();
@@ -235,8 +224,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
     setConnectionState("disconnected");
   }, [stopPolling, closeSerial]);
 
-  // Stable listeners, so reconnecting can remove the old ones first and a
-  // characteristic never ends up delivering each sample twice.
+  // Stable listeners, so reconnecting can remove the old ones first
   const onData = useCallback((event) => handlePacket(event.target.value, "notify"), [handlePacket]);
   const onStatus = useCallback(
     (event) => {
@@ -252,8 +240,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
     setConnectionState("disconnected");
   }, [stopPolling, log]);
 
-  // Fallback when live updates never arrive: ask the device for its newest
-  // value about 20 times a second instead.
+  // Fallback when live updates never arrive
   const startPolling = useCallback(
     (device, dataChar) => {
       stopPolling();
@@ -293,7 +280,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
     }
 
     if (transport === "phone") {
-      // The phone's own motion sensor (wrist games only, no grip).
+      // The phone's own motion sensor
       stopPhoneRef.current?.();
       stopPhoneRef.current = null;
       try {
@@ -328,8 +315,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
         setConnectionState("connecting");
         let port = portRef.current;
         if (!port) {
-          // A port allowed before (e.g. after unplugging and replugging) can
-          // be reopened without asking again, as long as it's the only one.
+          // A port allowed before can be reopened without asking again
           const granted = await navigator.serial.getPorts();
           if (granted.length === 1) {
             port = granted[0];
@@ -371,8 +357,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
       return;
     }
 
-    // After a dropped link, reconnect to the same AirGrip directly instead
-    // of making the player pick it from Chrome's device list again.
+    // After a drop, reconnect to the same device without the picker
     const reusing = deviceRef.current !== null;
     try {
       setConnectionState("connecting");
@@ -403,7 +388,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
       countersRef.current.mode = "notify";
       log("Asked for live updates. Waiting for data…");
 
-      // Status messages are nice to have; never let them block the data.
+      // Status messages are nice to have; never let them block the data
       try {
         const statusChar = await service.getCharacteristic(STATUS_CHAR_UUID);
         statusChar.removeEventListener("characteristicvaluechanged", onStatus);
@@ -429,7 +414,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
         }
       }, NOTIFY_GRACE_MS);
     } catch (err) {
-      // If the remembered device can't be reached, the next try shows the picker.
+      // If the remembered device can't be reached, the next try shows the picker
       if (reusing) deviceRef.current = null;
       setError(errText(err));
       log(`Error: ${errText(err)}`);
@@ -437,7 +422,7 @@ export function useAirGripSensor({ mock = false, transport = "ble" } = {}) {
     }
   }, [mock, transport, publish, onData, onStatus, onDrop, log, stopPolling, startPolling, closeSerial, readSerial]);
 
-  // Disconnect cleanly if the component using this hook unmounts.
+  // Disconnect cleanly if the component using this hook unmounts
   useEffect(() => disconnect, [disconnect]);
 
   return {

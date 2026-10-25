@@ -1,13 +1,12 @@
 import { GAMES } from "../data/games";
 import { activeKey } from "../data/profiles";
 
-// Today's guided session: the games the player picked (at least 2), in the
-// order they picked them. Each person's choice is remembered on this device.
+// Today's guided session: the games the player picked
 export const MIN_PLAN_GAMES = 2;
 const planKey = () => activeKey("planGames");
 export const DEFAULT_PLAN_IDS = ["squeeze-pop", "tilt-maze", "balloon-rescue", "fishing"];
 
-// What each game is for, shown in the session.
+// What each game is for, shown in the session
 const PURPOSE = {
   "squeeze-pop": "Warm up your grip",
   "tilt-maze": "Loosen up your wrist",
@@ -19,7 +18,7 @@ const PURPOSE = {
 export const PLAYABLE_GAMES = GAMES.filter((g) => g.playable);
 const isPlayable = (id) => PLAYABLE_GAMES.some((g) => g.id === id);
 
-// Game ids -> session steps.
+// Game ids -> session steps
 export const planFrom = (ids) =>
   ids
     .filter(isPlayable)
@@ -49,13 +48,11 @@ export function savePlanIds(ids) {
   try {
     localStorage.setItem(key, JSON.stringify(savedIds[key]));
   } catch {
-    // Storage blocked: remembered for this visit only.
+    // Storage blocked: remembered for this visit only
   }
 }
 
-// "Done for today" is remembered per person and local calendar day. Real
-// sessions are kept on this device; demo sessions only for this visit, since
-// demo data is never saved.
+// "Done for today" is remembered per person and local calendar day
 const doneKey = () => activeKey("planDone");
 let demoDoneDate = null;
 
@@ -81,7 +78,7 @@ export function markPlanDone(demoMode) {
   try {
     localStorage.setItem(doneKey(), todayKey());
   } catch {
-    // Storage blocked: Home just won't show "done for today".
+    // Storage blocked: Home just won't show "done for today"
   }
 }
 

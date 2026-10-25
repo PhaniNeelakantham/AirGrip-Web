@@ -1,8 +1,6 @@
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
-// Signed change chip: icon + number, so direction never relies on color alone.
-// goodWhen: "up" (rising is good), "down" (falling is good), or null (neutral).
-// suffix "%" for relative change, " pts" for a difference in points.
+// Signed change chip: icon + number, so direction never relies on color alone
 export function DeltaChip({ value, goodWhen = "up", suffix = "%" }) {
   if (value === null || value === undefined || !Number.isFinite(value)) return null;
   const rounded = Math.round(value);

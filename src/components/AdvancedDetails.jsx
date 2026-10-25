@@ -41,8 +41,7 @@ function MetricTile({ metric, value, change }) {
   );
 }
 
-// Extra detail for patients who want to learn more and for therapists:
-// grip control, wrist steadiness, ranges, a trend chart, and a data export.
+// Extra detail for patients who want to learn more and for therapists
 export default function AdvancedDetails({ inRange, now, before, compare, allSessions, demoMode }) {
   const { active } = useProfiles();
   const person = demoMode ? null : active;

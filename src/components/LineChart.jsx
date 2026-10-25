@@ -6,11 +6,7 @@ const PAD = { top: 22, right: 14, bottom: 30, left: 34 };
 
 const shortDate = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
-// Single-series trend (dataviz skill specs): 2px line, ~10% area wash,
-// 8px end dot with a surface ring, sparse direct label, hairline grid,
-// crosshair + tooltip on hover/arrow keys, and a table fallback.
-// dataKey: which measurement is shown. Changing it keeps the chart (axes stay
-// put), clears the hover, and fades the new line in.
+// Single-series trend: 2px line, ~10% area wash, 8px end dot with a surface ring
 export default function LineChart({ points, valueLabel, unit = "", valueFormat = (v) => v.toFixed(1), dataKey = "" }) {
   const wrapRef = useRef(null);
   const width = useElementWidth(wrapRef);
@@ -30,8 +26,7 @@ export default function LineChart({ points, valueLabel, unit = "", valueFormat =
     const rawMin = Math.min(...values);
     const rawMax = Math.max(...values);
     const spread = rawMax - rawMin || 1;
-    // Don't pad below 0 for all-positive data (e.g. psi), but let the scale go
-    // negative when the data does (e.g. fatigue), so nothing draws off-chart.
+    // Don't pad below 0 for all-positive data
     const minY = rawMin >= 0 ? Math.max(0, rawMin - spread * 0.2) : rawMin - spread * 0.2;
     const maxY = rawMax + spread * 0.2;
     const minT = Math.min(...times);
@@ -55,7 +50,7 @@ export default function LineChart({ points, valueLabel, unit = "", valueFormat =
       return { v, y: toY(v) };
     });
 
-    // A visible 0 line when the data crosses zero (e.g. fatigue: below = weaker).
+    // A visible 0 line when the data crosses zero
     const zeroY = minY < 0 && maxY > 0 ? toY(0) : null;
 
     return { scaled, line, area, ticks, baseY, zeroY };

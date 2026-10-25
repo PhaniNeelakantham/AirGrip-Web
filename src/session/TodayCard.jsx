@@ -1,8 +1,7 @@
 import { Check, Play } from "lucide-react";
 import { MIN_PLAN_GAMES, PLAYABLE_GAMES, isPlanDoneToday } from "./plan";
 
-// Home screen's main action: build (or redo) today's guided session. The
-// player picks the games on the next screen, so this shows all of them.
+// Home screen's main action: build today's guided session
 export default function TodayCard({ demoMode, onStart }) {
   const done = isPlanDoneToday(demoMode);
 

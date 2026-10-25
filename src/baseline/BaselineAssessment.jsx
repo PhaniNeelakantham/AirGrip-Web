@@ -6,9 +6,7 @@ import { useDevicePause } from "../games/useDevicePause";
 import { useHand } from "../data/hand";
 import { getGuest } from "../data/guest";
 
-// Full-screen guided check, in the spirit of Face ID setup: one instruction
-// at a time, a ring of ticks that lights up as you squeeze or move, and a
-// check mark between steps.
+// Full-screen guided check, in the spirit of Face ID setup
 
 const STEPS = [
   { id: "relax", kind: "rest", icon: Hand, title: "Relax your hand", sub: "Rest it gently on the grip. Don't squeeze.", seconds: 3 },
@@ -54,7 +52,7 @@ const MIN_SQUEEZE = { demo: 2, real: 0.5 }; // psi above relaxed needed to count
 const MIN_WRIST_DEG = 3; // less than this = we didn't see the movement
 const DEMO_MAX_PSI = 10;
 const DEMO_TILT_MAX = 55;
-const DEMO_YAW_SCALE = 0.55; // side-to-side range is naturally smaller (about 30°)
+const DEMO_YAW_SCALE = 0.55; // side-to-side range is naturally smaller
 
 const isKey = (e, names) => names.includes(e.key) || names.includes(e.code);
 
@@ -159,7 +157,7 @@ export default function BaselineAssessment({
     setNotice("AirGrip disconnected during the check. Reconnect, then start again.");
   }
 
-  // Demo controls: Space squeezes, arrow keys tilt and turn.
+  // Demo controls: Space squeezes, arrow keys tilt and turn
   const held = useRef(new Set());
   useEffect(() => {
     const map = (e) =>
@@ -190,15 +188,14 @@ export default function BaselineAssessment({
     };
   }, [phase, demoMode]);
 
-  // Measurements so far. Kept outside the sequence so retrying one wrist step
-  // doesn't throw away the earlier ones.
+  // Measurements so far
   const startAt = useRef({ index: 0, stage: "ready" });
   const freshAcc = () => ({ restSum: 0, restN: 0, rest: 0, peak: 0, centerP: 0, centerR: 0, centerY: 0, yawRef: null, centerN: 0, center: { pitch: 0, roll: 0, yaw: 0 } });
   const accRef = useRef(freshAcc());
   const wristRef = useRef({}); // id -> { sign, mag }
   const [retry, setRetry] = useState(null); // { kind: "grip" | "wrist", index }
 
-  // The guided sequence.
+  // The guided sequence
   useEffect(() => {
     if (phase !== "measure") return;
     let raf;
@@ -219,7 +216,7 @@ export default function BaselineAssessment({
       const ease = (v, target) => v + Math.max(-60 * dt, Math.min(60 * dt, target - v));
       demo.pitch = ease(demo.pitch, (h.has("up") ? DEMO_TILT_MAX : 0) - (h.has("down") ? DEMO_TILT_MAX : 0));
       const side = (h.has("right") ? DEMO_TILT_MAX : 0) - (h.has("left") ? DEMO_TILT_MAX : 0);
-      // Left/right keys turn during the turn steps and wave during the wave steps.
+      // Left/right keys turn during the turn steps and wave during the wave steps
       const waving = STEPS[s.index].axis === "yaw";
       demo.roll = ease(demo.roll, waving ? 0 : side);
       demo.yaw = ease(demo.yaw, waving ? side * DEMO_YAW_SCALE : 0);
@@ -281,7 +278,7 @@ export default function BaselineAssessment({
         } else if (step.kind === "center") {
           acc.centerP += angles.pitch;
           acc.centerR += angles.roll;
-          // Yaw can sit near the +/-180 seam, so average offsets from the first sample.
+          // Yaw can sit near the +/-180 seam, so average offsets from the first sample
           if (acc.yawRef === null) acc.yawRef = angles.yaw;
           acc.centerY += angleDelta(angles.yaw, acc.yawRef);
           acc.centerN++;
@@ -353,7 +350,7 @@ export default function BaselineAssessment({
     return () => cancelAnimationFrame(raf);
   }, [phase, demoMode, reading, link.pausedRef]);
 
-  // from: where to (re)start. A full start resets every measurement.
+  // from: where to (re)start; index 0 resets all measurements
   const run = (from = { index: 0, stage: "ready" }) => {
     link.resume();
     held.current.clear();

@@ -1,8 +1,6 @@
-// Rules for Fishing. Grip uses the same "level" as Squeeze Pop (0 = relaxed,
-// 1 = comfortable max). Wrist positions are "reach": 0 = level, 1 = 70% of
-// the player's comfortable range in that direction (from the baseline).
+// Rules for Fishing
 
-// Five catches per round, getting a little bigger each time.
+// Five catches per round, getting a little bigger each time
 export const FISH = [
   { id: "minnow", name: "Minnow", color: "#f2b84b", size: 0.75, grip: 0.3, reel: 4 },
   { id: "sunfish", name: "Sunfish", color: "#f28a3c", size: 0.85, grip: 0.35, reel: 4.5 },
@@ -17,22 +15,19 @@ export const LIFT_GOAL = 0.6; // tilt up this far to lift the rod
 export const CAST_GOAL = -0.35; // then tilt down this far to cast
 export const HOOK_HOLD_S = 1; // hold the squeeze this long to hook the fish
 
-// Signed degrees -> reach, using the full angle for that direction.
+// Signed degrees -> reach, using the full angle for that direction
 export function toReach(deg, fullPos, fullNeg) {
   return deg >= 0 ? deg / fullPos : deg / fullNeg;
 }
 
-// Where the next fish waits, as reach left/right: never straight ahead (so
-// aiming always takes a movement), and on the other side from where the rod
-// is pointing now, so the player always has to move to reach it.
+// Where the next fish waits, as reach left/right: never straight ahead
 export function fishAim(rodReach = 0) {
   const far = 0.4 + Math.random() * 0.35;
   const side = Math.abs(rodReach) < 0.1 ? (Math.random() < 0.5 ? 1 : -1) : rodReach > 0 ? -1 : 1;
   return side * far;
 }
 
-// Reeling: total back-and-forth wrist turning. The reading is smoothed first
-// so a shaky hand doesn't reel by itself.
+// Reeling: total back-and-forth wrist turning
 export function createReel() {
   let smooth = null;
   let travel = 0;

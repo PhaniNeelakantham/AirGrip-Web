@@ -91,7 +91,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
   const guest = useGuest() && !demoMode;
   const [rangeId, setRangeId] = useState("30d");
   const [chatOpen, setChatOpen] = useState(false);
-  // What the AI helper is told: this person's numbers only (see progressSummary.js).
+  // What the AI helper is told: this person's numbers only
   const aiSummary = useMemo(
     () =>
       chatOpen
@@ -108,8 +108,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
   const range = RANGE_OPTIONS.find((r) => r.id === rangeId);
 
   const data = useMemo(() => {
-    // Everything in the range is shown; the score and % changes compare the
-    // range with the one before it (or its own halves when history is short).
+    // Everything in the range is shown
     const inRange = sessionsInRange(sessions, range.days);
     const { current, baseline } = baselineForRange(sessions, range.days);
     const now = summarize(current);
@@ -130,7 +129,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
       try {
         localStorage.setItem(ADVANCED_KEY, open ? "0" : "1");
       } catch {
-        // Not remembered next visit; that's fine.
+        // Not remembered next visit; that's fine
       }
       return !open;
     });
@@ -170,8 +169,7 @@ export default function ProgressTracker({ sessions, demoMode, onNavigate }) {
     <>
       {header}
 
-      {/* AI helper: explains these numbers in plain words. Not in Guest mode,
-          since a guest's play isn't saved and there's nothing to explain. */}
+      {/* AI helper: explains these numbers in plain words */}
       {!guest && (
         <button className="ask-ai" onClick={() => setChatOpen(true)}>
           <span className="ask-ai-mark" aria-hidden="true">

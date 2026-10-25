@@ -3,8 +3,6 @@ import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // On localhost, answer POST /api/ask the same way the Vercel function does
-// (api/ask.js), using GEMINI_API_KEY from .env.local -- a git-ignored file,
-// so the key never ends up in the repo or in the app the browser downloads.
 function localAiApi() {
   return {
     name: 'airgrip-local-ai-api',
@@ -38,8 +36,7 @@ export default defineConfig({
   plugins: [
     react(),
     localAiApi(),
-    // Installable app: manifest + a service worker that caches the app for
-    // offline use and quietly updates itself after each new deploy.
+    // PWA: manifest + auto-updating service worker
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {

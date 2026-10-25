@@ -1,6 +1,6 @@
 import { initialsOf } from "../data/profiles";
 
-// A person's initials on their color, so they can find themselves at a glance.
+// A person's initials on their color, so they can find themselves at a glance
 export default function Avatar({ profile, size = 40 }) {
   return (
     <span

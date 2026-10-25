@@ -22,8 +22,7 @@ const MODE_LABEL = {
 
 const time = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-// Shows exactly what the website is receiving over Bluetooth, for testing
-// the real device. Opens by itself when connected but no data is arriving.
+// Shows exactly what the website is receiving over Bluetooth
 export default function ConnectionDetails({ diagnostics: d, reading, status, connectionState }) {
   const [copied, setCopied] = useState(false);
   const connected = connectionState === "connected";

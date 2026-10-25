@@ -1,11 +1,6 @@
 import { useEffect, useRef } from "react";
 
-// While a panel (Settings, the AI helper) is open, freeze the page behind it.
-// Pinning <body> works on iPhones too, where hiding overflow alone doesn't
-// stop scrolling; <html> is locked as well for desktop browsers. A mouse
-// wheel or finger over the dimmed backdrop does nothing; inside the panel,
-// the panel itself scrolls. On close, the page goes back where it was.
-// Returns refs for the backdrop and the panel.
+// While a panel is open, freeze the page behind it
 export function useScrollLock() {
   const backdropRef = useRef(null);
   const panelRef = useRef(null);

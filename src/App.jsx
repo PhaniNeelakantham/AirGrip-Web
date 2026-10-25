@@ -25,8 +25,7 @@ import { getDevMode } from "./data/devMode";
 
 const TRANSPORT_KEY = "aquagrip.transport";
 
-// "ble" (Bluetooth), "usb" (cable, Chrome/Edge on a computer), or "phone"
-// (this phone's own motion sensor: wrist games only, no grip).
+// "ble", "usb", or "phone"
 function loadTransport() {
   try {
     const saved = localStorage.getItem(TRANSPORT_KEY);
@@ -36,8 +35,7 @@ function loadTransport() {
   }
 }
 
-// Memoized so the sensor's ~50 updates per second don't re-render a game;
-// games read live data from `readingRef` inside their own frame loop.
+// Memoized so the sensor's ~50 updates per second don't re-render a game
 const GAME_SCREENS = {
   "tilt-maze": memo(TiltMaze),
   "squeeze-pop": memo(SqueezePop),
@@ -48,14 +46,13 @@ const GAME_SCREENS = {
 
 function App() {
   const [tab, setTab] = useState("home");
-  // Always starts off: real device + this browser's saved history.
+  // Always starts off: real device + this browser's saved history
   const [demoMode, setDemoMode] = useState(false);
   const [transport, setTransport] = useState(loadTransport);
   const sensor = useAirGripSensor({ mock: demoMode, transport });
   const phoneMode = !demoMode && transport === "phone";
   const savedSessions = useSavedSessions();
-  // Each person, and each of their hands, has its own progress. (Demo data
-  // isn't tied to anyone.)
+  // Each person, and each of their hands, has its own progress
   const hand = useHand();
   const { profiles, active } = useProfiles();
   const mySessions = useMemo(
@@ -64,9 +61,7 @@ function App() {
   );
   const sessions = demoMode ? mockSessions : mySessions;
 
-  // ---- People: "Who's playing?", adding and editing a profile ----
-  // Opens on start when 2+ people share this device, or to welcome a brand-new
-  // install. view: "who" | "add" | "edit"
+  // ---- People: who's playing, add/edit profile ----
   const [people, setPeople] = useState(() => (getProfiles().length !== 1 ? { view: "who", onStart: true } : null));
   const closePeople = () => {
     setPeople(null);
@@ -90,7 +85,7 @@ function App() {
     try {
       localStorage.setItem(TRANSPORT_KEY, next);
     } catch {
-      // Storage blocked: the choice just isn't remembered next visit.
+      // Storage blocked: the choice just isn't remembered next visit
     }
   };
 
@@ -110,9 +105,6 @@ function App() {
 
   const openSession = () => {
     // The games are tuned from the baseline, so take it first if it's missing
-    // (optional in Demo mode, which has default ranges).
-    // (Phone mode has no grip sensor for the baseline; its session screen
-    // explains which games it can play.)
     if (!demoMode && !phoneMode && !getDevMode() && !getBaseline(false)) {
       setBaselineOpen({ thenSession: true });
       return;
@@ -126,7 +118,7 @@ function App() {
     window.scrollTo({ top: 0 });
     if (done && thenSession) setGuided({ stage: "intro" });
   };
-  // ids: the games picked on the session screen, in order.
+  // ids: the games picked on the session screen, in order
   const startSession = (ids) => {
     savePlanIds(ids);
     setGuided({ stage: "game", plan: planFrom(ids), id: newSessionId(), step: 0, results: [], startedAt: Date.now() });

@@ -4,11 +4,10 @@ import { MIN_PLAN_GAMES, PLAYABLE_GAMES, getPlanIds, planFrom, planMinutes } fro
 
 const LEVEL_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
-// Before a session: pick the games (at least 2). They're played in the order
-// they were picked, shown by the number on each tile.
+// Before a session: pick the games
 export default function SessionIntro({ demoMode, phoneMode = false, connectionState, onStart, onExit }) {
   const connected = connectionState === "connected";
-  // With just a phone there's no grip sensor, so only wrist games can be picked.
+  // With just a phone there's no grip sensor, so only wrist games can be picked
   const available = PLAYABLE_GAMES.filter((g) => !(phoneMode && g.needsGrip));
   const [picked, setPicked] = useState(() => getPlanIds().filter((id) => available.some((g) => g.id === id)));
   const plan = planFrom(picked);

@@ -5,7 +5,7 @@ import { useProfiles, weeklyGoalOf } from "../data/profiles";
 
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
-// One plain-language line per exercise.
+// One plain-language line per exercise
 function describe(gameId, r) {
   if (!r) return "Skipped";
   switch (gameId) {

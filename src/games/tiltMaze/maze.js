@@ -1,8 +1,6 @@
-// Maze generation + ball physics for Tilt Maze, in "cell" units: the maze
-// spans x 0..cols and y 0..rows, one cell = 1 unit.
+// Maze generation + ball physics for Tilt Maze
 
-// Perfect maze (exactly one path between any two cells) via randomized
-// depth-first search -- long winding corridors suit a tilting game.
+// Perfect maze via randomized depth-first search
 export function generateMaze(cols, rows, rand = Math.random) {
   const cells = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => ({ n: true, e: true, s: true, w: true, seen: false }))
@@ -36,9 +34,7 @@ export function generateMaze(cols, rows, rand = Math.random) {
   return { cols, rows, cells };
 }
 
-// Walls as axis-aligned rectangles of the given thickness. Interior walls
-// are shared by two cells, so only each cell's north/west walls are emitted,
-// plus the outer east and south borders.
+// Walls as axis-aligned rectangles of the given thickness
 export function wallRects({ cols, rows, cells }, thickness) {
   const h = thickness / 2;
   const rects = [];
@@ -54,8 +50,7 @@ export function wallRects({ cols, rows, cells }, thickness) {
   return rects;
 }
 
-// Push the ball out of any wall it overlaps and cancel the part of its
-// velocity pointing into that wall, so it slides along walls instead of sticking.
+// Push the ball out of any wall it overlaps
 export function resolveCollisions(ball, radius, rects) {
   for (let pass = 0; pass < 3; pass++) {
     let hit = false;

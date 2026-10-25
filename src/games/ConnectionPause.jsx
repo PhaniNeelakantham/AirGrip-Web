@@ -1,7 +1,6 @@
 import { BluetoothConnected, BluetoothOff } from "lucide-react";
 
-// Shown over a paused game: first while the device is gone, then once it's
-// back, asking the player to get ready and tap Resume.
+// Shown over a paused game: first while the device is gone, then once it's back
 export default function ConnectionPause({ lost, silent = false, connecting, readyHint, onReconnect, onResume, onEnd }) {
   return (
     <div className="game-overlay">

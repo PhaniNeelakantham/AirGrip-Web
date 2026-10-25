@@ -1,8 +1,7 @@
 import { UserRound } from "lucide-react";
 import { nextGuest, setGuest } from "../data/guest";
 
-// Shown on Home and Progress while Guest mode is on, so it's never left on
-// by accident.
+// Shown on Home and Progress while Guest mode is on
 export default function GuestBanner({ onOpenBaseline }) {
   return (
     <div className="banner tint-lavender guest-banner" role="status">

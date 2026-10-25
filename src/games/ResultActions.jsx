@@ -1,7 +1,6 @@
 import { ArrowRight } from "lucide-react";
 
-// Buttons on a game's results card. In a guided session the main action
-// moves on to the next step; on its own, a game offers Play again / Done.
+// Buttons on a game's results card
 export default function ResultActions({ sessionStep, onNext, onPlayAgain, onExit, playAgainLabel = "Play again" }) {
   if (sessionStep) {
     const last = sessionStep.index === sessionStep.total - 1;
@@ -29,7 +28,7 @@ export default function ResultActions({ sessionStep, onNext, onPlayAgain, onExit
   );
 }
 
-// Small "Step 1 of 3" tag shown under a game's title during a session.
+// Small "Step 1 of 3" tag shown under a game's title during a session
 export function StepTag({ sessionStep }) {
   if (!sessionStep) return null;
   return (

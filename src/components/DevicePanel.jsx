@@ -15,7 +15,7 @@ const AXES = [
   { key: "yaw", label: "Twist", hint: "side to side" },
 ];
 
-// Vertical slider: knob sits in the middle at 0°, moves up for positive.
+// Vertical slider: 0° in the middle, up for positive
 function AxisBar({ label, hint, degrees }) {
   const clamped = Math.max(-AXIS_RANGE_DEG, Math.min(AXIS_RANGE_DEG, degrees));
   const pct = 50 + (clamped / AXIS_RANGE_DEG) * 50;
@@ -34,12 +34,7 @@ function AxisBar({ label, hint, degrees }) {
   );
 }
 
-// The sensor reads absolute pressure (a relaxed hand may read ~14.7 psi), so
-// the meter shows squeeze *above* rest: the saved grip check if there is one,
-// otherwise the lowest reading seen since connecting. Only believable
-// readings count: not the firmware's 0.0 placeholder while the pressure
-// sensor starts up (opening the USB port can restart the board), and not a
-// one-off jump away from the previous reading.
+// The sensor reads absolute pressure, so the meter shows squeeze *above* rest
 const PLACEHOLDER_PSI = 0.5;
 const MAX_JUMP_PSI = 1.5;
 

@@ -25,8 +25,8 @@ import {
 const MOVE_SPEED = 0.85; // balloon widths per second at full tilt
 const MAX_TILT = 30; // degrees of wrist rotation for full speed
 const DEADZONE = 4;
-const KEY_RAMP = 140; // degrees per second the arrow keys ease tilt in/out
-const FALLBACK_SPAN_PSI = 0.8; // squeeze range used when no grip check has been done
+const KEY_RAMP = 140; // degrees per second the arrow keys ease tilt
+const FALLBACK_SPAN_PSI = 0.8; // squeeze range used when no grip check has been
 const BALLOON_COLOR = ["#ff8a6b", "#e8456b"];
 
 const KEY_DIRS = { ArrowLeft: "left", ArrowRight: "right", a: "left", d: "right" };
@@ -166,11 +166,11 @@ export default function BalloonRescue({
 
     const connected = connectionState === "connected";
     const canStart = demoMode || connected;
-    // The pump strength comes from the Baseline assessment (optional in Demo mode).
+    // The pump strength comes from the Baseline assessment
     const devMode = useDevMode(); // Settings: play without the baseline
     const hasCalibration = demoMode || devMode || getCalibration(false) !== null;
 
-    // Keep the canvas matched to its container.
+    // Keep the canvas matched to its container
     useEffect(() => {
         const el = areaRef.current;
         if (!el) return;
@@ -212,7 +212,7 @@ export default function BalloonRescue({
         ctx.globalAlpha = 1;
     }, []);
 
-    // Idle scene behind the intro and results cards.
+    // Idle scene behind the intro and results cards
     useEffect(() => {
         if (phase === "pump" || phase === "fly") return;
         const ctx = prepareCanvas();
@@ -224,8 +224,7 @@ export default function BalloonRescue({
         }
     }, [phase, result, size, prepareCanvas, drawStars]);
 
-    // Space bar pumps (demo mode), arrows rotate. Keys are swallowed only while
-    // a round is running, so they still work on buttons in menus.
+    // Space bar pumps, arrows rotate
     useEffect(() => {
         const onDown = (e) => {
             if (phase === "pump" && e.code === "Space") {
@@ -290,7 +289,7 @@ export default function BalloonRescue({
         [demoMode, sessionGroupId]
     );
 
-    // Stage 1: pump the balloon to the brim before time runs out.
+    // Stage 1: pump the balloon to the brim before time runs out
     useEffect(() => {
         if (phase !== "pump") return;
         const cal = getCalibration(demoMode);
@@ -362,7 +361,7 @@ export default function BalloonRescue({
         return () => cancelAnimationFrame(raf);
     }, [phase, demoMode, reading, prepareCanvas, drawStars, finish]);
 
-    // Stage 2: rotate the wrist to steer the balloon clear of asteroids.
+    // Stage 2: rotate the wrist to steer the balloon clear of asteroids
     useEffect(() => {
         if (phase !== "fly") return;
         if (!demoMode) center.current = toAngles(reading.current);

@@ -23,8 +23,7 @@ import ResultActions, { StepTag } from "../ResultActions";
 import { createGripTracker, createTremorTracker } from "../metrics";
 import { angleDelta, toAngles } from "../../ble/orientation";
 
-// One catch, one movement at a time: wave to aim, tilt up then down to
-// cast, squeeze to hook, turn back and forth to reel in.
+// One catch, one movement at a time: wave to aim, tilt up then down to cast
 
 const CAST_S = 0.7; // bobber flight
 const CAUGHT_S = 1.8; // "You caught..." card
@@ -34,10 +33,10 @@ const FINISH_DELAY = 0.2;
 const DEMO_MAX_PSI = 10;
 const DEMO_RISE = 6;
 const DEMO_FALL = 32;
-const DEMO_MOVE = 2.5; // pretend reach per second while an arrow is held (tilt, turn)
-const YAW_SMOOTH_S = 0.2; // the side-to-side reading is smoothed over about this long
+const DEMO_MOVE = 2.5; // pretend reach per second while an arrow is held
+const YAW_SMOOTH_S = 0.2; // the side-to-side reading is smoothed over about
 
-// Scene geometry (SVG units). The rod pivots at the shore, bottom center.
+// Scene geometry
 const VB_W = 360;
 const VB_H = 460;
 const PX = 180;
@@ -55,7 +54,7 @@ const polar = (deg, dist) => ({
   y: PY - Math.cos((deg * Math.PI) / 180) * dist,
 });
 
-// Where a new fish first appears, so it doesn't flash elsewhere for a frame.
+// Where a new fish first appears, so it doesn't flash elsewhere for a frame
 const fishStart = (aim) => {
   const p = polar(aim * AIM_DEG, FISH_DIST);
   return `translate(${p.x.toFixed(1)} ${(p.y + 14).toFixed(1)})`;
@@ -184,13 +183,12 @@ export default function Fishing({
   const connected = connectionState === "connected";
   const canStart = demoMode || connected;
   const baseline = getBaseline(demoMode);
-  // Demo mode plays with default ranges; the baseline is optional there.
-  // Developer mode (Settings) skips it on the real device too.
+  // Demo mode plays with default ranges; the baseline is optional there
   const devMode = useDevMode();
   const hasBaseline = demoMode || devMode || (baseline !== null && getCalibration(false) !== null);
   const hasYaw = Number.isFinite(baseline?.yawRight);
 
-  // Demo controls: arrow keys / WASD move, Space squeezes.
+  // Demo controls: arrow keys / WASD move, Space squeezes
   useEffect(() => {
     const map = (e) =>
       e.code === "Space" ? "squeeze"
@@ -251,7 +249,7 @@ export default function Fishing({
     [demoMode, sessionGroupId]
   );
 
-  // Main game loop.
+  // Main game loop
   useEffect(() => {
     if (phase !== "playing") return;
     const cal = getPlayCalibration(demoMode, reading.current.forcePsi);
@@ -302,7 +300,7 @@ export default function Fishing({
         demo.psi = h.has("squeeze")
           ? Math.min(DEMO_MAX_PSI, demo.psi + DEMO_RISE * dt)
           : Math.max(0, demo.psi - DEMO_FALL * dt);
-        // Left/right waves while aiming and turns while reeling.
+        // Left/right waves while aiming and turns while reeling
         if (g.stage === "aim") demo.yaw = clamp(demo.yaw + side * 1.2 * dt, -1.15, 1.15);
         demo.roll = ease(demo.roll, g.stage === "reel" ? side * 0.8 : 0, dt);
         demo.pitch = ease(demo.pitch, (h.has("up") ? 1 : 0) - (h.has("down") ? 1 : 0), dt);
@@ -320,7 +318,7 @@ export default function Fishing({
         r.min = Math.min(r.min, deg[axis]);
         r.max = Math.max(r.max, deg[axis]);
       }
-      // Wrist steadiness from each new sensor reading (not each screen frame).
+      // Wrist steadiness from each new sensor reading
       const sample = reading.current;
       if (sample !== g.lastSample) {
         const at = lastDataAtRef.current;
@@ -339,11 +337,9 @@ export default function Fishing({
     const nextFish = () => {
       g.index++;
       g.fish = FISH[g.index];
-      // The rod still points at the fish just caught: put the next one on the
-      // other side.
+      // The rod still points at the fish just caught
       g.aim = fishAim(g.aim);
-      // Zero the wrist angles for the next fish: wherever the hand rests now
-      // counts as straight ahead and level (this also clears any slow drift).
+      // Zero the wrist angles for the next fish
       if (!demoMode) center.current = toAngles(reading.current);
       demo.yaw = 0;
       demo.pitch = 0;
@@ -365,7 +361,7 @@ export default function Fishing({
       const spot = polar(g.aim * AIM_DEG, FISH_DIST);
       e.rod?.setAttribute("transform", `rotate(${aimAngle.toFixed(2)} ${PX} ${PY})`);
 
-      // Bobber: flies out while casting, sits by the fish, comes in while reeling.
+      // Bobber: flies out while casting, sits by the fish, comes in while reeling
       let bob = spot;
       if (g.stage === "cast") {
         const u = Math.min(1, g.t / CAST_S);
@@ -406,7 +402,7 @@ export default function Fishing({
       g.t += dt;
 
       const inp = readInputs(dt);
-      // Smooth the side-to-side reading so small wobbles don't jerk the rod.
+      // Smooth the side-to-side reading so small wobbles don't jerk the rod
       g.yawF += (inp.yaw - g.yawF) * Math.min(1, dt / YAW_SMOOTH_S);
       inp.yaw = g.yawF;
       const level = toLevel(inp.psi, cal);
@@ -480,7 +476,7 @@ export default function Fishing({
 
       draw(inp, level);
 
-      // Only discrete changes re-render through React.
+      // Only discrete changes re-render through React
       const signature = [g.index, g.stage, g.lifted, onTarget, g.caught].join("|");
       if (signature !== lastSignature) {
         lastSignature = signature;
@@ -562,7 +558,7 @@ export default function Fishing({
               </g>
               {stage === "aim" && <circle r={RING_R + 6} className="fish-ring-track" />}
               {stage === "aim" && (
-                // Fills while the rod points at the fish.
+                // Fills while the rod points at the fish
                 <circle
                   ref={setEl("aimRing")}
                   r={RING_R + 6}

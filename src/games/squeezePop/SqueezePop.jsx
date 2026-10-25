@@ -19,7 +19,7 @@ const REST_SECONDS = 4;
 const FINISH_DELAY = 0.7; // let the last pop animation play
 const DEMO_MAX_PSI = 10;
 const DEMO_RISE = 6; // pretend psi per second while the button is held
-const DEMO_FALL = 32; // a real hand lets go fast, so the pretend grip drops quickly
+const DEMO_FALL = 32; // a real hand lets go fast
 const BUBBLE_SIZE = 112;
 
 function randomTarget(prev) {
@@ -33,7 +33,6 @@ const bubbleBottom = (y) => `calc(${y} * (100% - ${BUBBLE_SIZE}px))`;
 const ringOffset = (fill) => RING_LENGTH * (1 - fill);
 
 // The live bubble's position and ring are also written directly every frame
-// through posRef/ringRef; the values here are just the starting point.
 function Bubble({ bubble, fill = 0, effect, posRef, ringRef }) {
   const r = RING_R;
   const circumference = RING_LENGTH;
@@ -109,7 +108,7 @@ export default function SqueezePop({
   sessionGroupId = null,
   onNext,
 }) {
-  // The player's grip range comes from the Baseline assessment (Home).
+  // The player's grip range comes from the Baseline assessment
   const [phase, setPhase] = useState("intro"); // intro | playing | done
   const [view, setView] = useState(null);
   const [result, setResult] = useState(null);
@@ -123,7 +122,7 @@ export default function SqueezePop({
 
   const connected = connectionState === "connected";
   const canStart = demoMode || connected;
-  // Demo mode plays with a default grip range; the baseline is optional there.
+  // Demo mode plays with a default grip range; the baseline is optional there
   const hasCalibration = getPlayCalibration(demoMode) !== null;
   const demoUntuned = demoMode && !getBaseline(true);
   const devUntuned = !demoMode && !getBaseline(false); // Developer mode, no baseline
@@ -140,8 +139,7 @@ export default function SqueezePop({
     [demoMode, reading]
   );
 
-  // Space bar squeezes in demo mode. Only swallowed while a round is
-  // running, so Space still works on buttons in the menus.
+  // Space bar squeezes in demo mode
   useEffect(() => {
     const active = phase === "playing";
     const onDown = (e) => {
@@ -195,7 +193,7 @@ export default function SqueezePop({
     [demoMode, sessionGroupId]
   );
 
-  // Main game loop.
+  // Main game loop
   useEffect(() => {
     if (phase !== "playing") return;
     const cal = getPlayCalibration(demoMode, reading.current.forcePsi);
@@ -214,7 +212,7 @@ export default function SqueezePop({
       squeezeSum: 0,
       squeezeFrames: 0,
       reps: createRepCounter(),
-      // advanced measurements (Progress -> Advanced details)
+      // advanced measurements
       grip: createGripTracker(),
       tremor: createTremorTracker(),
       lastSample: null,
@@ -245,7 +243,7 @@ export default function SqueezePop({
       g.reps.update(level);
       g.grip.update(level, dt);
       if (!demoMode) {
-        // Wrist steadiness from each new sensor reading (not each screen frame).
+        // Wrist steadiness from each new sensor reading
         const r = reading.current;
         if (r !== g.lastSample) {
           const at = lastDataAtRef.current;
@@ -297,8 +295,7 @@ export default function SqueezePop({
         }
       }
 
-      // Continuous visuals: written straight to the page every frame, so the
-      // bar and ring track the squeeze exactly without waiting on React.
+      // Continuous visuals: written straight to the page every frame
       const fill = g.bubble ? Math.min(1, level / g.bubble.target.level) : 0;
       if (meterFillRef.current) meterFillRef.current.style.height = meterHeight(level);
       if (g.bubble && bubblePosRef.current) {
@@ -306,8 +303,7 @@ export default function SqueezePop({
         bubbleRingRef.current?.setAttribute("stroke-dashoffset", ringOffset(fill));
       }
 
-      // Discrete changes (new bubble, filled, popped, rest countdown) are the
-      // only things that re-render through React -- a few times a second.
+      // Discrete changes are the only things that re-render through React
       const restSeconds = Math.ceil(g.resting);
       const signature = [
         g.bubble?.id,

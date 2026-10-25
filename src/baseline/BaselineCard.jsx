@@ -3,7 +3,7 @@ import { useBaseline } from "../data/baseline";
 import { useHand } from "../data/hand";
 import { useGuest } from "../data/guest";
 
-// Home: invite a first baseline assessment; afterwards, a compact summary.
+// Home: invite a first baseline assessment; afterwards, a compact summary
 export default function BaselineCard({ demoMode, onStart }) {
   const baseline = useBaseline(demoMode);
   const hand = useHand();

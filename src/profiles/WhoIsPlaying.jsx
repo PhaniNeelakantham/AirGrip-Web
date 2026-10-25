@@ -3,9 +3,7 @@ import { setActiveProfile, useProfiles } from "../data/profiles";
 import { setGuest } from "../data/guest";
 import Avatar from "./Avatar";
 
-// "Who's playing?": pick yourself, add someone, or play as a guest. Shown
-// when the app opens with 2+ people set up, from the avatar on Home, and on
-// a brand-new install (as a welcome, with no one to pick yet).
+// "Who's playing?": pick yourself, add someone, or play as a guest
 export default function WhoIsPlaying({ onDone, onAdd, onClose }) {
   const { profiles, active } = useProfiles();
   const firstRun = profiles.length === 0;

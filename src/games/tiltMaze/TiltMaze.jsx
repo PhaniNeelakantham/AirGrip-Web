@@ -16,13 +16,10 @@ const ROWS = 8;
 const WALL = 0.14; // wall thickness, in cells
 const BALL_R = 0.26;
 const MAX_SPEED = 1.6; // cells per second at full tilt
-const KEY_RAMP = 140; // degrees per second the arrow keys ease tilt in/out
+const KEY_RAMP = 140; // degrees per second the arrow keys ease tilt
 const GOAL_RADIUS = 0.35;
 
-// Palm turn (roll) moves the ball left/right; tilting (pitch) moves it
-// up/down. How much tilt gives full speed in each direction, the dead zone,
-// and which way the sensor reads "up"/"right" come from the player's
-// Baseline assessment (see tiltTuning); without one, 40 degrees each way.
+// Palm turn moves the ball left/right; tilting moves it up/down
 
 const KEY_DIRS = {
   ArrowLeft: "left",
@@ -54,7 +51,7 @@ function readColors() {
   };
 }
 
-// fullPos/fullNeg: degrees for full speed in the + and - screen directions.
+// fullPos/fullNeg: degrees for full speed in the + and - screen directions
 function speedFromTilt(deg, fullPos, fullNeg, deadzone) {
   const mag = Math.abs(deg);
   if (mag < deadzone) return 0;
@@ -101,7 +98,7 @@ export default function TiltMaze({
   onExit,
   onReconnect,
   onOpenBaseline,
-  phoneMode = false, // driven by this phone's motion sensor instead of the AirGrip
+  phoneMode = false, // driven by this phone's motion sensor instead of
   sessionStep = null,
   sessionGroupId = null,
   onNext,
@@ -202,7 +199,7 @@ export default function TiltMaze({
     ctx.fill();
   }, [width, height, cellPx, rects]);
 
-  // Static redraw for intro/results and on resize or theme change.
+  // Static redraw for intro/results and on resize or theme change
   useEffect(() => {
     colors.current = null;
     draw();
@@ -215,8 +212,7 @@ export default function TiltMaze({
     return () => mq.removeEventListener("change", onTheme);
   }, [draw, phase]);
 
-  // Arrow keys / WASD, demo mode only. Arrow keys are always swallowed
-  // during the game so they don't scroll the page.
+  // Arrow keys / WASD, demo mode only
   useEffect(() => {
     const onDown = (e) => {
       const dir = KEY_DIRS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
@@ -253,7 +249,7 @@ export default function TiltMaze({
           avgForcePsi: null,
           reps: null,
           rotationRangeDeg: rangeDeg,
-          // advanced: range per direction + wrist steadiness (X = palm turn, Y = tilt)
+          // advanced: range per direction + wrist steadiness
           rollRangeDeg: Math.round(rg.maxX - rg.minX),
           pitchRangeDeg: Math.round(rg.maxY - rg.minY),
           ...tremor.current.tracker.result(),
@@ -266,22 +262,18 @@ export default function TiltMaze({
     [demoMode, sessionGroupId]
   );
 
-  // Game loop.
+  // Game loop
   useEffect(() => {
     if (phase !== "playing") return;
     let raf;
     let last = performance.now();
-    let seconds = 0; // time actually played: paused or off-screen time doesn't count
+    let seconds = 0; // time actually played: paused or off-screen time
     let lastUi = 0;
 
-    // Current tilt in degrees: x > 0 = right, y > 0 = down.
+    // Current tilt in degrees: x > 0 = right, y > 0 = down
     const tune = tiltTuning(getBaseline(demoMode));
     if (phoneMode) {
-      // The phone reports tilt the standard way round; the baseline's
-      // directions were learned for how the AirGrip sits in the hand.
-      // Up/down is flipped so the phone works like a tray: tip the top edge
-      // down and the ball rolls up the screen, toward the low side (left /
-      // right already work that way). The up and down ranges swap with it.
+      // The phone reports tilt the standard way round
       tune.pitchUpSign = -1;
       tune.rollRightSign = 1;
       tune.full = { ...tune.full, up: tune.full.down, down: tune.full.up };
@@ -300,7 +292,7 @@ export default function TiltMaze({
       }
       const angles = toAngles(reading.current);
       const rel = (axis) => angleDelta(angles[axis], center.current[axis]);
-      // Screen right = the "right" turn from the baseline; screen up is -y.
+      // Screen right = the "right" turn from the baseline; screen up is -y
       return { x: rel("roll") * tune.rollRightSign, y: -rel("pitch") * tune.pitchUpSign };
     };
 
@@ -315,7 +307,7 @@ export default function TiltMaze({
 
       const tilt = readTilt(dt);
       if (!demoMode) {
-        // Wrist steadiness from each new sensor reading (not each screen frame).
+        // Wrist steadiness from each new sensor reading
         const tr = tremor.current;
         const r = reading.current;
         if (r !== tr.last) {
@@ -361,7 +353,7 @@ export default function TiltMaze({
     return () => cancelAnimationFrame(raf);
   }, [phase, demoMode, phoneMode, reading, lastDataAtRef, rects, draw, finish, link.pausedRef]);
 
-  // After a reconnect the hand may have moved, so "level" is wherever it is now.
+  // After a reconnect the hand may have moved, so "level" is wherever it is now
   const resumeAfterReconnect = () => {
     center.current = toAngles(reading.current);
     ball.current.vx = 0;

@@ -68,7 +68,7 @@ export default function GameMenu({ phoneMode = false, sensor, demoMode, onDemoMo
             </h2>
             <div className="games">
               {games.map((game) =>
-                // With just a phone there's no grip sensor: grip games are locked.
+                // With just a phone there's no grip sensor: grip games are locked
                 game.playable && !(phoneMode && game.needsGrip) ? (
                   <button key={game.id} className={`game-card tint-${game.tint}`} onClick={() => onPlay(game.id)}>
                     <GameCardBody game={game} />

@@ -1,5 +1,4 @@
-// Turns raw session history into what the Progress Tracker screen shows:
-// a filtered slice, its summary stats, and an improvement score.
+// Turns raw session history into what the Progress Tracker screen shows
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const RANGE_OPTIONS = [
@@ -15,10 +14,7 @@ export function sessionsInRange(sessions, days, now = Date.now()) {
   return sessions.filter((s) => s.timestamp >= cutoff);
 }
 
-// The period immediately before the selected one, same length -- the
-// baseline an improvement score and deltas are measured against. Falls
-// back to splitting the selected range itself in half when there isn't
-// enough earlier history (e.g. "All time", or a new user).
+// The period immediately before the selected one, same length
 export function baselineForRange(sessions, days, now = Date.now()) {
   if (days === Infinity) {
     const current = sessions;
@@ -35,7 +31,7 @@ export function baselineForRange(sessions, days, now = Date.now()) {
 
   if (baseline.length >= 2) return { current, baseline };
 
-  // Not enough prior history -- split the current window instead.
+  // Not enough prior history -- split the current window instead
   const mid = Math.floor(current.length / 2);
   return { current: current.slice(mid), baseline: current.slice(0, mid) };
 }
@@ -45,15 +41,13 @@ function average(values) {
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
-// Averages only the sessions that recorded this metric (a wrist-only game
-// has no grip numbers); null when none did.
+// Averages only the sessions that recorded this metric; null when none did
 export function averageOf(sessions, key) {
   const values = sessions.map((s) => s[key]).filter(Number.isFinite);
   return values.length ? average(values) : null;
 }
 
-// Games played inside one guided session share a groupId and count as one
-// session; games played on their own each count as one.
+// Games played inside one guided session share a groupId and count as one session
 export function countSessions(records) {
   return new Set(records.map((s) => s.groupId ?? `single-${s.id}`)).size;
 }
@@ -73,19 +67,14 @@ export function percentChange(current, baseline) {
   return ((current - baseline) / baseline) * 100;
 }
 
-// Maps a %-change onto a 0-100 metric score: 0% change -> 50 (no change),
-// +/-50% or more change is fully saturated to 100 / 0. Clamped in between,
-// so one wild outlier session can't swing the score off the scale.
+// Maps a %-change onto a 0-100 metric score: 0% change -> 50
 function metricScore(current, baseline) {
   const change = percentChange(current, baseline);
   const clamped = Math.max(-50, Math.min(50, change));
   return 50 + clamped;
 }
 
-// The "improvement score out of 100": average of the metric scores (peak
-// force, reps, rotation range) that both periods have data for, comparing
-// the selected period against the one immediately before it.
-// 50 = no change, 100 = each metric up 50%+, 0 = each down 50%+.
+// Improvement score (0-100): average of the metric scores both periods have
 export function improvementScore(currentSummary, baselineSummary) {
   const scores = ["avgPeakForce", "avgReps", "avgRotationRange"]
     .filter((k) => currentSummary[k] !== null && baselineSummary[k] !== null)

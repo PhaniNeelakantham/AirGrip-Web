@@ -1,14 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-// People who use AirGrip on this device. Everything personal -- baselines,
-// grip range, session picks, progress -- belongs to the active profile.
-// All of it is stored on this device only (localStorage); nothing is sent
-// anywhere unless the person exports their progress.
-//
-//   aquagrip.profiles.v1   -> [{ id, name, color, hand, weeklyGoal, ageRange, createdAt }]
-//   aquagrip.activeProfile -> id of the person playing now
-//   aquagrip.p.<id>.<name> -> that person's own data (see profileKey)
-//   sessions               -> one shared list, each tagged with its profileId
+// People who use AirGrip on this device
 
 const PROFILES_KEY = "aquagrip.profiles.v1";
 const ACTIVE_KEY = "aquagrip.activeProfile";
@@ -35,14 +27,11 @@ function save() {
     if (activeId) localStorage.setItem(ACTIVE_KEY, activeId);
     else localStorage.removeItem(ACTIVE_KEY);
   } catch {
-    // Storage blocked: kept for this visit only.
+    // Storage blocked: kept for this visit only
   }
 }
 
-// Before profiles existed, everything was saved for one unnamed person.
-// The first time this version runs, that data becomes a profile called
-// "Me", so nobody loses their baseline or progress. (The old keys are left
-// in place, untouched, as a safety copy.)
+// Before profiles existed, everything was saved for one unnamed person
 function migrate() {
   const read = (k) => {
     try {
@@ -69,7 +58,7 @@ function migrate() {
   }
   const hasData =
     (Array.isArray(sessions) && sessions.length > 0) || old.baselineRight || old.baselineLeft || old.calRight || old.calLeft;
-  if (!hasData) return []; // a brand-new install: the first screen sets someone up
+  if (!hasData) return []; // a brand-new install: the first screen sets
 
   const me = {
     id: newId(),
@@ -85,7 +74,7 @@ function migrate() {
     try {
       localStorage.setItem(profileKey(me.id, name), value);
     } catch {
-      // Storage blocked: nothing to migrate into.
+      // Storage blocked: nothing to migrate into
     }
   };
   put("baseline.right", old.baselineRight);
@@ -101,7 +90,7 @@ function migrate() {
         JSON.stringify(sessions.map((s) => (s.profileId ? s : { ...s, profileId: me.id })))
       );
     } catch {
-      // Storage blocked: sessions without an owner count as the first profile.
+      // Storage blocked: sessions without an owner count as the first profile
     }
   }
   activeId = me.id;
@@ -140,9 +129,7 @@ export function getActiveProfile() {
   return profiles.find((p) => p.id === activeId) ?? null;
 }
 
-// Storage key for one person's own data, e.g. their right-hand baseline.
-// With nobody set up yet (only possible before the first profile is
-// created) it falls back to a shared spot.
+// Storage key for one person's own data, e.g. their right-hand baseline
 export function profileKey(id, name) {
   return `aquagrip.p.${id ?? "none"}.${name}`;
 }
@@ -181,7 +168,7 @@ export function updateProfile(id, patch) {
   notify();
 }
 
-// Removes the person and everything saved for them on this device.
+// Removes the person and everything saved for them on this device
 export function deleteProfile(id) {
   load();
   profiles = profiles.filter((p) => p.id !== id);
@@ -196,7 +183,7 @@ export function deleteProfile(id) {
       localStorage.setItem("aquagrip.sessions.v1", JSON.stringify(sessions.filter((s) => s.profileId !== id)));
     }
   } catch {
-    // Storage blocked: nothing saved to remove.
+    // Storage blocked: nothing saved to remove
   }
   if (activeId === id) activeId = profiles[0]?.id ?? null;
   save();
@@ -220,7 +207,7 @@ export function useProfiles() {
 }
 
 export const weeklyGoalOf = (profile) => profile?.weeklyGoal ?? DEFAULT_WEEKLY_GOAL;
-// Sessions saved before profiles existed belong to the first profile.
+// Sessions saved before profiles existed belong to the first profile
 export const sessionOwner = (s, list) => s.profileId ?? list[0]?.id ?? null;
 
 export const initialsOf = (name) =>

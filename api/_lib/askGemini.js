@@ -1,19 +1,12 @@
-// Shared by the Vercel function (api/ask.js) and the local dev server
-// (vite.config.js). Talks to Google's Gemini API with the server-side key,
-// which never reaches the browser.
+// Shared by the Vercel function and the local dev server
 
-// "-latest" names always point at Google's current model, so the helper keeps
-// working when older versions are retired. The Lite model answers first: it
-// replies in about a second, while the bigger Flash model "thinks" first and,
-// when Google is busy, can take minutes. Flash is the backup.
+// "-latest" names always point at Google's current model
 const MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
-// Give up on one model after this long and try the next, instead of waiting
-// minutes for a busy one.
+// Give up on one model after this long and try the next
 const ATTEMPT_MS = 12000;
 const LIMITS = { question: 500, summary: 24000, history: 10, historyText: 1500 };
 
-// The assistant's rules: explain this person's AirGrip numbers in plain,
-// warm language -- never medical advice.
+// System prompt: plain-language progress help, never medical advice
 const SYSTEM = `You are the AirGrip progress helper. AirGrip is a hand and wrist therapy device (a grip that
 measures squeeze pressure in psi, plus a motion sensor for wrist tilt, turn and side-to-side movement) with
 short games. Many users are older adults; some have arthritis, Parkinson's disease or are recovering from a stroke.
@@ -38,7 +31,7 @@ Rules:
 
 const clip = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
 
-// Returns { status, body } so both servers can send it back as JSON.
+// Returns { status, body } so both servers can send it back as JSON
 export async function askGemini({ question, history, summary }, env) {
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return { status: 500, body: { error: "The AI helper isn't set up yet (no API key on the server)." } };
@@ -82,7 +75,7 @@ export async function askGemini({ question, history, summary }, env) {
       });
       data = await res.json().catch(() => ({}));
     } catch {
-      // Too slow (timed out) or the network failed: try the next model.
+      // Too slow or the network failed: try the next model
       lastStatus = 504;
       continue;
     } finally {
@@ -94,11 +87,11 @@ export async function askGemini({ question, history, summary }, env) {
         .join("")
         .trim();
       if (answer) return { status: 200, body: { answer } };
-      lastStatus = 204; // nothing usable (e.g. cut off): try the next model
+      lastStatus = 204; // nothing usable: try the next model
       continue;
     }
     lastStatus = res.status;
-    // Busy, retired or temporarily failing: try the next model.
+    // Busy, retired or temporarily failing: try the next model
     if (res.status === 503 || res.status === 404 || res.status === 500) continue;
     break;
   }

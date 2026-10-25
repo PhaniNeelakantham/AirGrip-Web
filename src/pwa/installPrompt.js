@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-// Chrome/Edge fire `beforeinstallprompt` once, often before any screen has
-// mounted, so it's captured at startup and handed to the UI when asked.
+// Chrome/Edge fire `beforeinstallprompt` once
 let deferredPrompt = null;
 const listeners = new Set();
 const notify = () => listeners.forEach((fn) => fn());
@@ -11,7 +10,7 @@ const isInstalled = () => standaloneQuery.matches || window.navigator.standalone
 standaloneQuery.addEventListener("change", () => notify());
 
 window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault(); // show our own button instead of the browser's mini-bar
+  e.preventDefault(); // show our own button instead of the browser's
   deferredPrompt = e;
   notify();
 });
@@ -26,8 +25,7 @@ const subscribe = (fn) => {
   return () => listeners.delete(fn);
 };
 
-// "installed" (running as the app), "ready" (one-click install available),
-// or "manual" (browser needs its own menu, e.g. iPhone Safari).
+// "installed", "ready", or "manual"
 export function useInstallState() {
   return useSyncExternalStore(subscribe, () =>
     isInstalled() ? "installed" : deferredPrompt ? "ready" : "manual"

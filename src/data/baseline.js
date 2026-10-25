@@ -4,13 +4,7 @@ import { getHand, subscribeHand } from "./hand";
 import { activeKey } from "./profiles";
 import { getGuest, getGuestRun, subscribeGuest } from "./guest";
 
-// The player's starting point from the Baseline assessment: grip range
-// (relaxed + comfortable max, psi) and wrist range in each direction (degrees
-// from "level": tilt = pitch, turn = roll, wave side to side = yaw; yaw
-// fields are missing on baselines taken before it was added), plus which way the sensor reads for "up" and "right" on
-// this player's device. One per person and hand. Real results are saved on
-// this device; demo results only for this visit, since demo data is never
-// saved.
+// The player's starting point from the Baseline assessment
 const keyFor = (hand) => activeKey(`baseline.${hand}`);
 const demoBaseline = {};
 const saved = {};
@@ -52,15 +46,15 @@ export function saveBaseline(demoMode, baseline, hand = getHand()) {
     try {
       localStorage.setItem(keyFor(hand), JSON.stringify(baseline));
     } catch {
-      // Storage blocked: kept for this visit only.
+      // Storage blocked: kept for this visit only
     }
   }
-  // Grip games read their range from the grip calibration.
+  // Grip games read their range from the grip calibration
   saveCalibration(demoMode, { restPsi: baseline.restPsi, maxPsi: baseline.maxPsi, at: baseline.at }, hand);
   listeners.forEach((fn) => fn());
 }
 
-// Also changes when the player switches hands or guests.
+// Also changes when the player switches hands or guests
 function subscribe(fn) {
   listeners.add(fn);
   const offHand = subscribeHand(fn);
@@ -77,16 +71,15 @@ export function useBaseline(demoMode) {
 }
 
 // ---- Turning the baseline into game difficulty ----
-const FULL_SPEED_FRACTION = 0.7; // full speed at 70% of the player's comfortable range
-const MIN_FULL_DEG = 10; // never require less than this (noise would steer the ball)
+const FULL_SPEED_FRACTION = 0.7; // full speed at 70% of the player's comfortable
+const MIN_FULL_DEG = 10; // never require less than this
 const MAX_FULL_DEG = 40; // never require more than this (the default)
 export const DEFAULT_FULL_DEG = 40;
 export const DEFAULT_DEADZONE_DEG = 4;
 
 const fullFor = (range) => Math.min(MAX_FULL_DEG, Math.max(MIN_FULL_DEG, range * FULL_SPEED_FRACTION));
 
-// Tilt Maze tuning: the tilt needed for full speed in each screen direction,
-// a matching dead zone, and which sensor direction is "up"/"right".
+// Tilt Maze tuning: the tilt needed for full speed in each screen direction
 export function tiltTuning(baseline) {
   if (!baseline) {
     return {
@@ -113,22 +106,18 @@ export function tiltTuning(baseline) {
   };
 }
 
-// Side-to-side (yaw) range is naturally smaller, and baselines taken before
-// it was measured don't have it.
+// Side-to-side range is naturally smaller
 const DEFAULT_YAW_FULL_DEG = 20;
 const yawFullFor = (range) =>
   Number.isFinite(range) ? Math.min(30, Math.max(8, range * FULL_SPEED_FRACTION)) : DEFAULT_YAW_FULL_DEG;
 
-// All three wrist directions, for games that use tilt, turn and wave:
-// the angle that counts as "all the way" (70% of the player's range) in
-// each direction, and which sensor direction is up / right.
+// Tilt, turn and wave tuning for games that use all three
 export function wristTuning(baseline) {
   const tilt = tiltTuning(baseline);
   return {
     ...tilt,
     yawFull: { right: yawFullFor(baseline?.yawRight), left: yawFullFor(baseline?.yawLeft) },
-    // Without a measured direction (Developer mode, or a baseline from before
-    // the wave steps): on the AirGrip, waving right reads as negative yaw.
+    // Default when not measured: waving right reads as negative yaw
     yawRightSign: baseline?.yawRightSign ?? -1,
   };
 }

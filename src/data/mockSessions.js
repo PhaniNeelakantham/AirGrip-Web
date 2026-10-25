@@ -1,12 +1,7 @@
-// Fake session history for building/testing the Progress Tracker before
-// real usage data exists. Trends gently upward with noise so period
-// comparisons and the improvement score have something real to show.
-// Replace with actual logged sessions once games are wired up.
+// Sample session history for Demo mode
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 140;
-// Which game each sample session was (picked from its own random stream,
-// so the sample numbers stay exactly as they were). Weighted toward the
-// games most people play.
+// Which game each sample session was
 const SAMPLE_GAMES = ["squeeze-pop", "squeeze-pop", "tilt-maze", "tilt-maze", "garden", "balloon-rescue", "fishing"];
 
 function seededRandom(seed) {
@@ -31,7 +26,7 @@ function generateMockSessions() {
     if (skip) continue;
 
     const sessionsToday = rand() < 0.15 ? 2 : 1;
-    // progress ramps from 0 (oldest) to 1 (most recent)
+    // progress ramps from 0 to 1
     const progress = 1 - dayIndex / HISTORY_DAYS;
 
     for (let s = 0; s < sessionsToday; s++) {
@@ -43,8 +38,7 @@ function generateMockSessions() {
       const rotationRangeDeg = Math.max(10, 45 + progress * 25 + noise() * 10);
       const durationS = Math.max(20, 60 + progress * 60 + noise() * 15);
 
-      // Advanced measurements, from their own random stream so the basic
-      // sample numbers above stay exactly as they were.
+      // Advanced measurements, from their own random stream
       const n2 = () => (rand2() - 0.5) * 2;
       sessions.push({
         id: id++,

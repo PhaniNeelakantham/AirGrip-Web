@@ -1,7 +1,7 @@
 import { Download } from "lucide-react";
 import { isIOS, promptInstall, useInstallState } from "../pwa/installPrompt";
 
-// Always shown until AirGrip is running as an installed app.
+// Always shown until AirGrip is running as an installed app
 export default function InstallCard() {
   const state = useInstallState();
   if (state === "installed") return null;

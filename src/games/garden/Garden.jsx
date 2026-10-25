@@ -12,11 +12,7 @@ import ResultActions, { StepTag } from "../ResultActions";
 import { createGripTracker, createTremorTracker } from "../metrics";
 import { angleDelta, toAngles } from "../../ble/orientation";
 
-// Garden Watering: one flower at a time, one move at a time.
-//   1. Squeeze gently and hold in the green zone -> the tap fills the can.
-//   2. Tilt your hand down -> the can tips and waters the flower.
-//   3. The flower blooms; a new sprout appears. Five flowers.
-// Nothing can be failed: leaving the zone or tilting back just pauses.
+// Garden Watering: steady squeeze fills the can, tilt down to water; 5 flowers
 
 const FLOWERS = [
   { name: "Tulip", petal: "#ff5d73", center: "#ffd166" },
@@ -25,9 +21,7 @@ const FLOWERS = [
   { name: "Rose", petal: "#ff7eb6", center: "#c2185b" },
   { name: "Lavender", petal: "#b18cff", center: "#ffe082" },
 ];
-// The green zone, as a share of the player's comfortable max. Each flower
-// gets its own: somewhere from light (20%) to firm (75%), about a quarter
-// of the max wide, and never in the same place twice in a row.
+// The green zone, as a share of the player's comfortable max
 function newZone(prev) {
   for (;;) {
     const lo = 0.2 + Math.random() * 0.25;
@@ -38,14 +32,13 @@ function newZone(prev) {
 const METER_TOP = 0.9; // the grip meter shows 0 .. 90% of max
 const FILL_S = 3.5; // seconds of steady squeezing to fill the can
 const POUR_S = 3; // seconds to empty the can at a good tilt
-const POUR_START = 0.2; // tilt down this far (reach) and water starts to flow...
+const POUR_START = 0.2; // tilt down this far and water starts to flow
 const POUR_FULL = 0.55; // ...this far pours at full speed
 const BLOOM_S = 2; // celebrate each flower
 const FINISH_DELAY = 0.3;
 const TILT_SMOOTH_S = 0.15; // the can follows the hand smoothly
 const CAN_MAX_DEG = 55;
-// Demo: holding keeps squeezing harder, letting go eases off -- so staying in
-// the green takes the same "not too hard, not too soft" control as a hand.
+// Demo: holding keeps squeezing harder, letting go eases off
 const DEMO_RISE = 0.3; // pretend share of max per second while held
 const DEMO_FALL = 0.4; // ...and while let go
 const DEMO_TILT = 2; // pretend reach per second while an arrow is held
@@ -53,9 +46,8 @@ const DEMO_TILT = 2; // pretend reach per second while an arrow is held
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
-// ---- Scene geometry (SVG units) ----
-// The can and tap are drawn 40 units higher than their own coordinates (see
-// CAN_LIFT), so a full-grown flower never touches the spout.
+// ---- Scene geometry ----
+// Can and tap drawn CAN_LIFT higher so a full-grown flower clears the spout
 const CAN_LIFT = 40;
 const PIVOT = { x: 100, y: 165 - CAN_LIFT }; // the can tips around its handle side
 const SPOUT = { x: 178, y: 118 - CAN_LIFT }; // spout tip, untilted
@@ -69,7 +61,7 @@ function spoutAt(deg) {
   return { x: PIVOT.x + dx * Math.cos(a) - dy * Math.sin(a), y: PIVOT.y + dx * Math.sin(a) + dy * Math.cos(a) };
 }
 
-// Stem path for a growth level (0 = wilted sprout, 1 = full height).
+// Stem path for a growth level
 function stemPath(growth) {
   const h = 34 + 100 * growth;
   const droop = (1 - growth) * 26;
@@ -104,7 +96,7 @@ function DemoControls({ held, stage }) {
     e.preventDefault();
     if (down) {
       held.current.add(key);
-      // Keep getting this pointer's events, so letting go is always noticed.
+      // Keep getting this pointer's events, so letting go is always noticed
       e.currentTarget.setPointerCapture?.(e.pointerId);
     } else {
       held.current.delete(key);
@@ -159,7 +151,7 @@ export default function Garden({
   const hasBaseline = demoMode || devMode || getCalibration(false) !== null;
   const tuned = tiltTuning(getBaseline(demoMode)).tuned;
 
-  // Demo controls: Space squeezes, Down / Up tilt the can.
+  // Demo controls: Space squeezes, Down / Up tilt the can
   useEffect(() => {
     const map = (e) =>
       e.code === "Space" ? "squeeze"
@@ -192,8 +184,7 @@ export default function Garden({
       const pitchRange = Math.round(g.range.max - g.range.min);
       const peak = Number(g.peak.toFixed(2));
       const ttt = g.timesToZone;
-      // Hold endurance counts squeezes above half of max; this gentle game may
-      // never get there, so leave it out instead of recording a 0.
+      // Hold endurance counts squeezes above half of max
       const grip = g.grip.result();
       if (!grip.holdBestS) grip.holdBestS = null;
       if (!demoMode) {
@@ -225,7 +216,7 @@ export default function Garden({
     [demoMode, sessionGroupId]
   );
 
-  // Main game loop.
+  // Main game loop
   useEffect(() => {
     if (phase !== "playing") return;
     const cal = getPlayCalibration(demoMode, reading.current.forcePsi);
@@ -276,7 +267,7 @@ export default function Garden({
       const deg = angleDelta(a.pitch, center.current.pitch) * tune.pitchUpSign;
       g.range.min = Math.min(g.range.min, deg);
       g.range.max = Math.max(g.range.max, deg);
-      // Wrist steadiness from each new sensor reading (not each screen frame).
+      // Wrist steadiness from each new sensor reading
       const sample = reading.current;
       if (sample !== g.lastSample) {
         const at = lastDataAtRef.current;
@@ -297,7 +288,7 @@ export default function Garden({
         e.water.setAttribute("y", (171 - h).toFixed(1));
         e.water.setAttribute("height", h.toFixed(1));
       }
-      // Tap stream while filling; spout stream while pouring.
+      // Tap stream while filling; spout stream while pouring
       const filling = g.stage === "fill" && g.inZone;
       if (e.tap) e.tap.style.opacity = filling ? 1 : 0;
       const flowing = pouring && g.tilt >= POUR_START && g.water > 0;
@@ -334,7 +325,7 @@ export default function Garden({
       }
       g.reps.update(level);
       g.grip.update(level, dt);
-      // Smoothed tilt down (positive) / up (negative).
+      // Smoothed tilt down / up
       g.tilt += (-inp.pitch - g.tilt) * Math.min(1, dt / TILT_SMOOTH_S);
 
       g.inZone = level >= g.zone[0] && level <= g.zone[1];
@@ -362,7 +353,7 @@ export default function Garden({
         }
       } else if (g.stage === "pour") {
         const rate = clamp((g.tilt - POUR_START) / (POUR_FULL - POUR_START), 0, 1);
-        // Just past the start it trickles; more tilt pours faster.
+        // Just past the start it trickles; more tilt pours faster
         const flow = g.tilt >= POUR_START ? Math.max(0.25, rate) / POUR_S : 0;
         const poured = Math.min(g.water, flow * dt);
         g.water -= poured;
@@ -382,9 +373,7 @@ export default function Garden({
             g.index++;
             g.growth = 0;
             g.zone = newZone(g.zone);
-            // Zero the tilt for the next flower: wherever the hand rests now
-            // counts as level -- unless it's still tipped down to pour, which
-            // would make "level" a pour.
+            // Zero the tilt for the next flower: wherever the hand rests now counts as level
             if (g.tilt < POUR_START) {
               if (!demoMode) center.current = toAngles(reading.current);
               demo.pitch = 0;
@@ -399,11 +388,10 @@ export default function Garden({
 
       draw(level);
 
-      // Only discrete changes re-render through React.
+      // Only discrete changes re-render through React
       const signature = [g.index, g.stage, g.inZone, hint, g.bloomed].join("|");
       if (signature !== lastSignature) {
-        // The on-screen Demo button changes (or hides) with the stage, so a
-        // press still "held" from the last stage would never be released.
+        // The on-screen Demo button changes with the stage
         if (demoMode && lastSignature && lastSignature.split("|")[1] !== g.stage) held.current.clear();
         lastSignature = signature;
         setView({ index: g.index, stage: g.stage, inZone: g.inZone, hint, bloomed: g.bloomed, zone: g.zone });
