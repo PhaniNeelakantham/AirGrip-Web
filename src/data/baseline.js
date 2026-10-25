@@ -70,7 +70,7 @@ export function useBaseline(demoMode) {
   return useSyncExternalStore(subscribe, () => getBaseline(demoMode));
 }
 
-// ---- Turning the baseline into game difficulty ----
+// Turning the baseline into game difficulty
 const FULL_SPEED_FRACTION = 0.7; // full speed at 70% of the player's comfortable
 const MIN_FULL_DEG = 10; // never require less than this
 const MAX_FULL_DEG = 40; // never require more than this (the default)

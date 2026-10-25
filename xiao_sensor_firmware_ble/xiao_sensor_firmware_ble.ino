@@ -22,11 +22,11 @@
 
 const char *FW_VERSION = "aquagrip-fw-ble-4";
 
-// ---- Connection switch ----
+// Connection switch
 // 1 = Bluetooth + USB, 0 = USB only (for ruling out BLE problems)
 #define ENABLE_BLE 1
 
-// ---- BLE identity ----
+// BLE identity
 #define BLE_DEVICE_NAME "AquaGrip"
 #define SERVICE_UUID      "a495ff10-c5b1-4b44-b512-1370f02d74de"
 #define DATA_CHAR_UUID    "a495ff11-c5b1-4b44-b512-1370f02d74de"
@@ -109,13 +109,13 @@ void sendReadingBLE(float force_psi, float qw, float qx, float qy, float qz) {
   dataChar->notify();
 }
 
-// ---- MPRLS setup ----
+// MPRLS setup
 // No reset/EOC pins wired -> pass -1 for both
 #define MPRLS_RESET_PIN -1
 #define MPRLS_EOC_PIN -1
 Adafruit_MPRLS mpr = Adafruit_MPRLS(MPRLS_RESET_PIN, MPRLS_EOC_PIN);
 
-// ---- BNO085 setup ----
+// BNO085 setup
 // I2C mode doesn't need a reset pin either
 #define BNO08X_RESET -1
 Adafruit_BNO08x bno08x(BNO08X_RESET);
@@ -137,7 +137,7 @@ bool havePressureBaseline = false;
 bool mprReady = false;
 bool bnoReady = false;
 
-// ---- BNO085 recovery ----
+// BNO085 recovery
 // After a reset the chip forgets its reports; keep re-enabling and watch for stalls
 bool bnoReportsOn = false;                           // game rotation vector enabled?
 unsigned long lastReportAttemptMs = 0;

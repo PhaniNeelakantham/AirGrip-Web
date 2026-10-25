@@ -158,7 +158,7 @@ export default function ProfileForm({ profile = null, onClose, onCreated, onDele
     );
   }
 
-  // ---- Adding someone, one step at a time ----
+  // Adding someone, one step at a time
   const steps = 4;
   const create = () => {
     addProfile(fields);

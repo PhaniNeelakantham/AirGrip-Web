@@ -61,7 +61,7 @@ function App() {
   );
   const sessions = demoMode ? mockSessions : mySessions;
 
-  // ---- People: who's playing, add/edit profile ----
+  // People: who's playing, add/edit profile
   const [people, setPeople] = useState(() => (getProfiles().length !== 1 ? { view: "who", onStart: true } : null));
   const closePeople = () => {
     setPeople(null);
@@ -96,10 +96,10 @@ function App() {
     window.scrollTo({ top: 0 });
   }, []);
 
-  // ---- Today's guided session: intro -> each game in order -> summary ----
+  // Today's guided session: intro -> each game in order -> summary
   const [guided, setGuided] = useState(null); // { stage, id, step, results, startedAt }
 
-  // ---- Baseline assessment (full screen); returns to wherever it was opened ----
+  // Baseline assessment (full screen); returns to wherever it was opened
   const [baselineOpen, setBaselineOpen] = useState(null); // { thenSession } | null
   const openBaseline = useCallback(() => setBaselineOpen({ thenSession: false }), []);
 

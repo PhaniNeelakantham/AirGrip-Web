@@ -27,7 +27,7 @@ export function decodeStatus(dataView) {
   return textDecoder.decode(dataView);
 }
 
-// ---- USB ----
+// USB
 // Serial at 115200: "force_psi,qw,qx,qy,qz" lines plus STATUS lines
 export const SERIAL_BAUD = 115200;
 

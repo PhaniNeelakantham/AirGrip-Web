@@ -26,7 +26,7 @@ export function angleDelta(a, b) {
   return ((((a - b + 180) % 360) + 360) % 360) - 180;
 }
 
-// ---- IMU mounting ----
+// IMU mounting
 // BNO085 sits 90° CCW on the PCB; change IMU_MOUNT_DEG if it moves
 export const IMU_MOUNT_DEG = 90;
 

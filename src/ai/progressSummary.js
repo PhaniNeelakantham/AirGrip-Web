@@ -55,7 +55,7 @@ export function buildProgressSummary({ sessions, baseline, hand, weeklyGoal, dem
   if (demoMode) lines.push("NOTE: this is SAMPLE data from Demo mode, not a real person's history.");
   lines.push(`Hand being trained: ${hand}. Weekly goal: ${weeklyGoal} sessions a week.`);
 
-  // ---- Game library ----
+  // Game library
   lines.push("", "GAME LIBRARY (all AirGrip games):");
   for (const g of GAMES.filter((x) => x.playable)) {
     lines.push(`- ${g.name} (${LEVEL[g.level] ?? "Easy"}, about ${g.minutes} min, trains: ${g.trains}): ${g.desc}`);
@@ -64,7 +64,7 @@ export function buildProgressSummary({ sessions, baseline, hand, weeklyGoal, dem
   if (!sessions.length) {
     lines.push("", "No games played yet.");
   } else {
-    // ---- Streaks and consistency ----
+    // Streaks and consistency
     const { days, sessionsThisWeek } = weekOverview(sessions);
     lines.push(
       "",
@@ -93,7 +93,7 @@ export function buildProgressSummary({ sessions, baseline, hand, weeklyGoal, dem
       )}.`
     );
 
-    // ---- Overall trend ----
+    // Overall trend
     const { current, baseline: before } = baselineForRange(sessions, 30, now);
     const nowS = summarize(current);
     const beforeS = summarize(before);
@@ -119,7 +119,7 @@ export function buildProgressSummary({ sessions, baseline, hand, weeklyGoal, dem
     }).filter(Boolean);
     if (adv.length) lines.push("", "DETAILED MEASUREMENTS (recent 30 days vs before):", ...adv);
 
-    // ---- Per game ----
+    // Per game
     lines.push("", "PER GAME (all time):");
     for (const g of GAMES.filter((x) => x.playable)) {
       const mine = sessions.filter((s) => s.game === g.id);
@@ -153,7 +153,7 @@ export function buildProgressSummary({ sessions, baseline, hand, weeklyGoal, dem
     const unknown = sessions.filter((s) => !GAMES.some((g) => g.id === s.game)).length;
     if (unknown) lines.push(`- ${unknown} older games were saved without a game name.`);
 
-    // ---- Full recent history ----
+    // Full recent history
     const recent = sessions.filter((s) => now - s.timestamp < HISTORY_DAYS * DAY_MS);
     lines.push("", `GAME HISTORY (every game in the last ${HISTORY_DAYS} days, newest first):`);
     for (const s of [...recent].reverse()) {

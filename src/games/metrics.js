@@ -2,7 +2,7 @@
 
 const round = (v, digits) => (v === null || !Number.isFinite(v) ? null : Number(v.toFixed(digits)));
 
-// ---------- grip: hold endurance, steadiness, release control ----------
+// grip: hold endurance, steadiness, release control
 const HOLD_LEVEL = 0.5; // "holding" = at least half of the comfortable max
 const RELEASE_FROM = 0.25; // a squeeze must reach this before its release
 const RELEASE_TO = 0.15; // released = back down to this
@@ -98,7 +98,7 @@ export function createGripTracker() {
   };
 }
 
-// ---------- wrist: tremor amount and rhythm ----------
+// wrist: tremor amount and rhythm
 // Band-pass ~2.5-12 Hz: keep quick shakes, drop deliberate movement
 const FS = 50;
 const ZERO_HYSTERESIS = 0.1; // degrees; ignore sign flips smaller than this

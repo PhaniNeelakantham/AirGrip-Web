@@ -63,7 +63,7 @@ p {
   }
 }
 
-/* ---------- screen + motion ---------- */
+/* screen + motion */
 .screen {
   padding: 20px 20px 128px;
   animation: screen-in 280ms ease-out both;
@@ -91,7 +91,7 @@ p {
   }
 }
 
-/* ---------- headers ---------- */
+/* headers */
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -157,7 +157,7 @@ p {
   color: var(--ink-3);
 }
 
-/* ---------- surfaces ---------- */
+/* surfaces */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -172,7 +172,7 @@ p {
   margin-bottom: 8px;
 }
 
-/* ---------- buttons ---------- */
+/* buttons */
 .btn {
   border: none;
   border-radius: 16px;
@@ -217,7 +217,7 @@ p {
   cursor: pointer;
 }
 
-/* ---------- status chip ---------- */
+/* status chip */
 .status-chip {
   display: inline-flex;
   align-items: center;
@@ -245,7 +245,7 @@ p {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 22%, transparent);
 }
 
-/* ---------- hero ---------- */
+/* hero */
 .hero {
   position: relative;
   overflow: hidden;
@@ -307,7 +307,7 @@ p {
   margin-top: 6px;
 }
 
-/* ---------- ring ---------- */
+/* ring */
 .ring {
   position: relative;
   flex: none;
@@ -338,7 +338,7 @@ p {
   margin-top: 4px;
 }
 
-/* ---------- big action tiles ---------- */
+/* big action tiles */
 .tiles {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -419,7 +419,7 @@ p {
   margin-top: 2px;
 }
 
-/* ---------- week streak ---------- */
+/* week streak */
 .week {
   display: flex;
   justify-content: space-between;
@@ -483,7 +483,7 @@ p {
   color: var(--icon-peach);
 }
 
-/* ---------- tints ---------- */
+/* tints */
 .tint-lavender {
   --tint: var(--tint-lavender);
   --icon: var(--icon-lavender);
@@ -509,7 +509,7 @@ p {
   --icon: var(--icon-butter);
 }
 
-/* ---------- stat tiles ---------- */
+/* stat tiles */
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -581,7 +581,7 @@ p {
   background: var(--surface-2);
 }
 
-/* ---------- segmented control ---------- */
+/* segmented control */
 .segmented {
   display: flex;
   gap: 4px;
@@ -610,7 +610,7 @@ p {
   color: var(--on-primary);
 }
 
-/* ---------- score card ---------- */
+/* score card */
 .score-row {
   display: flex;
   align-items: center;
@@ -678,7 +678,7 @@ p {
   margin-top: 10px;
 }
 
-/* ---------- chart ---------- */
+/* chart */
 .chart {
   position: relative;
 }
@@ -731,7 +731,7 @@ p {
   text-align: right;
 }
 
-/* ---------- list rows ---------- */
+/* list rows */
 .list-row {
   display: flex;
   align-items: center;
@@ -780,7 +780,7 @@ p {
   color: var(--ink-3);
 }
 
-/* ---------- device panel ---------- */
+/* device panel */
 .device-head {
   display: flex;
   gap: 14px;
@@ -985,7 +985,7 @@ p {
   margin-top: -6px;
 }
 
-/* ---------- game cards ---------- */
+/* game cards */
 .games {
   display: grid;
   gap: 14px;
@@ -1071,7 +1071,7 @@ p {
   background: var(--surface-2);
 }
 
-/* ---------- bottom nav ---------- */
+/* bottom nav */
 .bottom-nav {
   position: fixed;
   z-index: 10;
@@ -1115,7 +1115,7 @@ p {
   color: var(--on-primary);
 }
 
-/* ---------- banners & empty states ---------- */
+/* banners & empty states */
 .banner {
   display: flex;
   align-items: center;
@@ -1166,7 +1166,7 @@ p {
   margin: 6px 0 18px;
 }
 
-/* ---------- game screen ---------- */
+/* game screen */
 .screen--game {
   padding-bottom: 32px;
 }
@@ -1396,7 +1396,7 @@ button.game-card:hover {
   background: var(--primary);
 }
 
-/* ---------- squeeze pop ---------- */
+/* squeeze pop */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1644,7 +1644,7 @@ button.game-card:hover {
   font-size: 20px;
 }
 
-/* ---------- install card ---------- */
+/* install card */
 .install-card {
   position: relative;
   display: flex;
@@ -1704,7 +1704,7 @@ button.game-card:hover {
 }
 
 
-/* ---------- balloon rescue ---------- */
+/* balloon rescue */
 /* The space scene is deliberately dark in both light and dark mode. */
 .space-area {
   position: relative;
@@ -1810,7 +1810,7 @@ button.game-card:hover {
   height: 64px;
 }
 
-/* ---------- connection details (diagnostics) ---------- */
+/* connection details (diagnostics) */
 .diag {
   margin-top: 16px;
   padding-top: 14px;
@@ -1915,7 +1915,7 @@ button.game-card:hover {
   font-size: 14px;
 }
 
-/* ---------- connection method toggle ---------- */
+/* connection method toggle */
 .transport {
   margin-top: 16px;
 }
@@ -1953,7 +1953,7 @@ button.game-card:hover {
 
 
 
-/* ---------- today's guided session ---------- */
+/* today's guided session */
 .today-card {
   margin-bottom: 16px;
   padding: 20px;
@@ -2173,7 +2173,7 @@ button.game-card:hover {
   margin-bottom: 14px;
 }
 
-/* ---------- progress: advanced details ---------- */
+/* progress: advanced details */
 .adv-toggle {
   width: 100%;
   display: flex;
@@ -2339,7 +2339,7 @@ button.game-card:hover {
   }
 }
 
-/* ---------- baseline assessment (full screen, Face ID style) ---------- */
+/* baseline assessment (full screen, Face ID style) */
 .bl {
   position: fixed;
   inset: 0;
@@ -2636,7 +2636,7 @@ button.game-card:hover {
   font-size: 20px;
 }
 
-/* ---------- home: baseline card ---------- */
+/* home: baseline card */
 .baseline-card {
   display: flex;
   align-items: center;
@@ -2737,7 +2737,7 @@ button.game-card:hover {
   cursor: pointer;
 }
 
-/* ---------- Fishing ---------- */
+/* Fishing */
 .fish-area {
   position: relative;
   overflow: hidden;
@@ -3052,7 +3052,7 @@ button.game-card:hover {
   }
 }
 
-/* ---------- Settings (gear on Home) ---------- */
+/* Settings (gear on Home) */
 .topbar-actions {
   flex: 1;
   display: flex;
@@ -3186,7 +3186,7 @@ button.game-card:hover {
   }
 }
 
-/* ---------- Guest mode ---------- */
+/* Guest mode */
 .guest-banner {
   flex-wrap: wrap;
 }
@@ -3249,7 +3249,7 @@ button.game-card:hover {
   }
 }
 
-/* ---------- Garden Watering ---------- */
+/* Garden Watering */
 .garden-area {
   position: relative;
   overflow: hidden;
@@ -3447,7 +3447,7 @@ button.game-card:hover {
   }
 }
 
-/* ---------- session: pick the games ---------- */
+/* session: pick the games */
 .pick-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -3601,7 +3601,7 @@ button.game-card:hover {
   transform: none;
 }
 
-/* ---------- profiles: who's playing, add / edit a person ---------- */
+/* profiles: who's playing, add / edit a person */
 .avatar {
   flex: none;
   display: inline-grid;
@@ -3904,7 +3904,7 @@ button.game-card:hover {
   gap: 10px;
 }
 
-/* ---------- AI helper: ask about my progress ---------- */
+/* AI helper: ask about my progress */
 .ask-ai {
   width: 100%;
   display: flex;

@@ -46,7 +46,7 @@ const DEMO_TILT = 2; // pretend reach per second while an arrow is held
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
-// ---- Scene geometry ----
+// Scene geometry
 // Can and tap drawn CAN_LIFT higher so a full-grown flower clears the spout
 const CAN_LIFT = 40;
 const PIVOT = { x: 100, y: 165 - CAN_LIFT }; // the can tips around its handle side
