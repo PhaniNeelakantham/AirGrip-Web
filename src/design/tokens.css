@@ -1,0 +1,126 @@
+/* AirGrip design tokens */
+:root {
+  color-scheme: light;
+  --font: "Plus Jakarta Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --bg: #f3f5fa;
+  --surface: #ffffff;
+  --surface-2: #f4f5fa;
+  --border: rgba(20, 23, 43, 0.07);
+  --shadow: 0 1px 2px rgba(20, 23, 43, 0.04), 0 8px 24px rgba(20, 23, 43, 0.06);
+  --shadow-lift: 0 14px 34px rgba(20, 23, 43, 0.12);
+
+  --ink: #14172b;
+  --ink-2: #545a75;
+  --ink-3: #7f849e;
+
+  --primary: #1f2a6b;
+  --on-primary: #ffffff;
+  --primary-text: #2f3fa3;
+  --focus: #5b6cf0;
+
+  --hero-from: #1f2a6b;
+  --hero-to: #3445b4;
+  --on-hero-2: rgba(255, 255, 255, 0.78);
+
+  --teal: #009488;
+  --on-teal: #ffffff;
+  --teal-bright: #5eead4;
+
+  --tile-games-from: #12b3a5;
+  --tile-games-to: #0a7f8c;
+  --tile-progress-from: #7a67f0;
+  --tile-progress-to: #4f3fcf;
+
+  --tint-lavender: #eeeaff;
+  --icon-lavender: #5543d6;
+  --tint-mint: #dcf6ec;
+  --icon-mint: #0a7a50;
+  --tint-peach: #ffeadf;
+  --icon-peach: #b8511f;
+  --tint-sky: #e1efff;
+  --icon-sky: #1f5fb8;
+  --tint-butter: #fff3cf;
+  --icon-butter: #8f5f00;
+
+  --good: #0b7a3e;
+  --good-bg: #ddf6e7;
+  --bad: #b8431f;
+  --bad-bg: #ffe8de;
+
+  --bubble-shine: rgba(255, 255, 255, 0.95);
+
+  --gridline: #e7e9f1;
+  --axis: #c9ccda;
+
+  --desk-base: #ebe8fb;
+  --desk-a: #cfe7ff;
+  --desk-b: #d5f4ec;
+
+  --water-top: #6fdcff;
+  --water-bottom: #1a9fe8;
+  --water-ripple: rgba(255, 255, 255, 0.7);
+  --shore: #7ddb4f;
+  --shore-edge: #4cc236;
+  --fish-shadow: rgba(8, 52, 110, 0.38);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #0d0f1c;
+    --surface: #171a2c;
+    --surface-2: #20243a;
+    --border: rgba(255, 255, 255, 0.07);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow-lift: 0 14px 34px rgba(0, 0, 0, 0.45);
+
+    --ink: #f3f4fa;
+    --ink-2: #b9bcd1;
+    --ink-3: #8b8fa8;
+
+    --primary: #5563e8;
+    --on-primary: #ffffff;
+    --primary-text: #9aa5ff;
+    --focus: #9aa5ff;
+
+    --hero-from: #232e78;
+    --hero-to: #3a4bc0;
+
+    --teal: #11a39a;
+    --on-teal: #ffffff;
+
+    --tint-lavender: #262249;
+    --icon-lavender: #b3a8ff;
+    --tint-mint: #15332b;
+    --icon-mint: #62d6a6;
+    --tint-peach: #3a2519;
+    --icon-peach: #ff9f6e;
+    --tint-sky: #172a45;
+    --icon-sky: #82b6ff;
+    --tint-butter: #372e12;
+    --icon-butter: #f0c24d;
+
+    --good: #5bd98b;
+    --good-bg: rgba(91, 217, 139, 0.14);
+    --bad: #ff9a7a;
+    --bad-bg: rgba(255, 154, 122, 0.14);
+
+    --bubble-shine: rgba(255, 255, 255, 0.28);
+
+    --gridline: #262a40;
+    --axis: #3a3f58;
+
+    --desk-base: #0a0b16;
+    --desk-a: #1a1f48;
+    --desk-b: #0f2e2c;
+
+    --water-top: #36b8f0;
+    --water-bottom: #1173c9;
+    --water-ripple: rgba(255, 255, 255, 0.5);
+    --shore: #5cc23d;
+    --shore-edge: #3fa52a;
+    --fish-shadow: rgba(4, 30, 72, 0.5);
+  }
+}
