@@ -1,16 +1,13 @@
-# React + Vite
+Hello Judges, welcome to 
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+# AirGrip!
 
-Currently, two official plugins are available:
+AirGrip aims to turn hand and wrist physical therapy into an engaging, fun, and easy-to-track activity through interactive games while at the same time tracking progress with detailed visualizations.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+I'm sure you saw our video, so I won't go over much more than this. 
 
-## React Compiler
+Some clarifications:
+AirGrip was originally named "AquaGrip", so some files and code still use the old name. As you review this repo, you might've noticed that in the firmware, the device advertises itself over Bluetooth as "AquaGrip". In the app's storage code, saved data is stored under names that begin with "aquagrip." We kept these on purpose because renaming them would erase users' current saved progress. A few other internal labels, like the exported file name and the package name, also still say AquaGrip, but this doesn't affect the UX. 
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Thank you!
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
